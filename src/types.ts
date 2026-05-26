@@ -85,3 +85,10 @@ export interface BaziChartResult {
   flowingTime: FlowingTimeInfo;
   solarTerms: SolarTermRecord[];
 }
+
+export interface ApiConfig {
+  provider: "system" | "gemini" | "deepseek" | "openai" | "custom";
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}

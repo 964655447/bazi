@@ -1,15 +1,33 @@
 import { useState } from "react";
 import { compileBazi } from "./utils/astronomy";
-import { BaziChartResult } from "./types";
+import { BaziChartResult, ApiConfig } from "./types";
 import BaziInput from "./components/BaziInput";
 import BaziPillarsCard from "./components/BaziPillarsCard";
 import DaYunTimeline from "./components/DaYunTimeline";
 import FlowingTimeCard from "./components/FlowingTimeCard";
 import AiAnalysisCard from "./components/AiAnalysisCard";
-import { Compass, BookOpen, Clock, RefreshCw, Sun } from "lucide-react";
+import ApiSettingsModal from "./components/ApiSettingsModal";
+import { Compass, BookOpen, Clock, RefreshCw, Sun, Sliders } from "lucide-react";
 
 export default function App() {
   const [baziResult, setBaziResult] = useState<BaziChartResult | null>(null);
+  const [isApiModalOpen, setIsApiModalOpen] = useState<boolean>(false);
+  const [apiConfig, setApiConfig] = useState<ApiConfig>(() => {
+    const saved = localStorage.getItem("bazi_api_config");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return {
+      provider: "system",
+      apiKey: "",
+      baseUrl: "",
+      model: ""
+    };
+  });
 
   // Initialize with a default chart so the user doesn't see a blank page!
   // This is a brilliant professional touch: they immediately see an elegant sample chart on first load,
@@ -64,7 +82,14 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-end">
+            <button
+              onClick={() => setIsApiModalOpen(true)}
+              className="flex items-center gap-1.5 text-xs text-[#5a5a40] hover:bg-[#5a5a40]/10 border border-dashed border-[#5a5a40] bg-transparent rounded-full px-4 py-1.5 font-bold transition-all cursor-pointer"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              API 大宗师设置
+            </button>
             <button
               onClick={handleReset}
               className="flex items-center gap-1.5 text-xs text-[#4a4a40] hover:bg-[#5a5a40] hover:text-[#f5f5f0] border border-[#5a5a40] bg-transparent rounded-full px-4 py-1.5 font-bold transition-all cursor-pointer"
@@ -147,7 +172,11 @@ export default function App() {
                 <FlowingTimeCard baziResult={baziResult} onTargetDateChange={handleTargetDateChange} />
 
                 {/* 4. Deep AI Bazi Interpretation */}
-                <AiAnalysisCard baziResult={baziResult} />
+                <AiAnalysisCard 
+                  baziResult={baziResult} 
+                  apiConfig={apiConfig} 
+                  onOpenApiSettings={() => setIsApiModalOpen(true)} 
+                />
               </div>
             ) : (
               <div className="bg-white p-12 text-center rounded-2xl border border-[#e5e5d5]">
@@ -170,6 +199,17 @@ export default function App() {
           &copy; React Bazi Calculator Master. All rights reserved.
         </div>
       </footer>
+
+      {/* API Key configuration settings modal */}
+      <ApiSettingsModal
+        isOpen={isApiModalOpen}
+        onClose={() => setIsApiModalOpen(false)}
+        config={apiConfig}
+        onSave={(newConfig) => {
+          setApiConfig(newConfig);
+          localStorage.setItem("bazi_api_config", JSON.stringify(newConfig));
+        }}
+      />
     </div>
   );
 }

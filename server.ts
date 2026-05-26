@@ -35,20 +35,11 @@ async function startServer() {
   // AI Bazi Reading Route
   app.post("/api/bazi-analyze", async (req, res) => {
     try {
-      const { baziData } = req.body;
+      const { baziData, apiConfig } = req.body;
       if (!baziData) {
         return res.status(400).json({ error: "No Bazi data provided" });
       }
 
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey.trim() === "") {
-        return res.status(400).json({ 
-          error: "未检测到有效的 GEMINI_API_KEY。请在 Google AI Studio 右上角点击 Settings -> Secrets，添加名为 GEMINI_API_KEY 的密钥（填入您的真实 Gemini API Key），然后再试一次。" 
-        });
-      }
-
-      const client = getGeminiClient();
-      
       const prompt = `
 你是一位精通中国传统命理学（八字神煞、大运流年、格局强弱）的专业命理学大师。请基于以下排盘数据，为缘主提供全面、温和、客观的深度命理分析报告：
 
@@ -92,14 +83,90 @@ async function startServer() {
 请用古典沉稳、鼓励乐观的语气回复，排版精美，擅用 Markdown 表格和区块。
 `;
 
-      const response = await client.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt
+      const provider = apiConfig?.provider || "system";
+
+      if (provider === "system") {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey.trim() === "") {
+          return res.status(400).json({ 
+            error: "默认 API 已使用完毕，请选择并填入您自己的 API Key（如 DeepSeek、Gemini、OpenAI 等）以保障命理批注正常运行。" 
+          });
+        }
+        const client = getGeminiClient();
+        const response = await client.models.generateContent({
+          model: "gemini-2.0-flash",
+          contents: prompt
+        });
+        return res.json({ analysis: response.text });
+      }
+
+      // User supplied API configuration
+      let { apiKey, baseUrl, model } = apiConfig;
+      if (!apiKey || apiKey.trim() === "") {
+        return res.status(400).json({ error: `您已选用 [${provider}] 作为服务商，但未填入相应的 API 密钥 (API Key)。` });
+      }
+
+      // Default presets if empty
+      if (provider === "deepseek") {
+        baseUrl = baseUrl || "https://api.deepseek.com/v1";
+        model = model || "deepseek-chat";
+      } else if (provider === "gemini") {
+        baseUrl = baseUrl || "https://generativelanguage.googleapis.com";
+        model = model || "gemini-2.0-flash";
+      } else if (provider === "openai") {
+        baseUrl = baseUrl || "https://api.openai.com/v1";
+        model = model || "gpt-4o-mini";
+      } else if (provider === "custom") {
+        if (!baseUrl) {
+          return res.status(400).json({ error: "由于您选择「自定义兼容接口」，请在下方输入您的‘API 接口代理地址 (Base URL)’。" });
+        }
+      }
+
+      // If official Gemini SDK is preferred for custom Gemini keys, handle gracefully
+      if (provider === "gemini" && (!baseUrl || baseUrl.includes("googleapis.com"))) {
+        const client = new GoogleGenAI({ apiKey });
+        const response = await client.models.generateContent({
+          model: model || "gemini-2.0-flash",
+          contents: prompt
+        });
+        return res.json({ analysis: response.text });
+      }
+
+      // Make OpenAI-compatible HTTP Chat Completion Request
+      const url = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
+      
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.6
+        })
       });
 
-      res.json({ analysis: response.text });
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("Custom API Call error:", errText);
+        return res.status(response.status).json({ 
+          error: `API 接口服务返回错误 [HTTP ${response.status}]: ${errText || "未知对接错误。请核对您的 API 密钥与代理地址。"}` 
+        });
+      }
+
+      const result = await response.json();
+      const content = result.choices?.[0]?.message?.content;
+      if (!content) {
+        return res.status(500).json({ error: "接口未能生成有效命理报告。请核实您所填写的模型名称是否正确，以及该账户是否还有余额。" });
+      }
+
+      res.json({ analysis: content });
     } catch (error: any) {
-      console.error("Gemini analysis error:", error);
+      console.error("Analysis route error:", error);
       res.status(500).json({ error: error.message || "AI Analysis Failed" });
     }
   });
