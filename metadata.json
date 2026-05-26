@@ -1,0 +1,6 @@
+{
+  "name": "八字排盘",
+  "description": "专业精准的八字排盘、真太阳时折算及智能AI命理分析解读工具",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
