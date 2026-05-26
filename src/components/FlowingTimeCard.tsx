@@ -66,7 +66,7 @@ export default function FlowingTimeCard({ baziResult, onTargetDateChange }: Flow
         {/* Flowing Year */}
         <div className="bg-[#fcfaf2]/40 border border-amber-900/10 rounded-xl p-5 space-y-3 flex flex-col justify-between hover:border-amber-900/20 hover:shadow-sm transition-all text-center">
           <div className="text-[10px] text-amber-900/50 uppercase tracking-wider font-sans">
-            流年运宿 (Current Year)
+            流年运宿
           </div>
           <div className="space-y-1">
             <div className="text-4xl font-extrabold font-serif text-amber-950">
@@ -84,7 +84,7 @@ export default function FlowingTimeCard({ baziResult, onTargetDateChange }: Flow
         {/* Flowing Month */}
         <div className="bg-[#fcfaf2]/40 border border-amber-900/10 rounded-xl p-5 space-y-3 flex flex-col justify-between hover:border-amber-900/20 hover:shadow-sm transition-all text-center">
           <div className="text-[10px] text-amber-900/50 uppercase tracking-wider font-sans">
-            流月起运 (Current Month)
+            流月起运
           </div>
           <div className="space-y-1">
             <div className="text-4xl font-extrabold font-serif text-amber-950">
@@ -102,7 +102,7 @@ export default function FlowingTimeCard({ baziResult, onTargetDateChange }: Flow
         {/* Flowing Day */}
         <div className="bg-[#fcfaf2]/40 border border-amber-900/10 rounded-xl p-5 space-y-3 flex flex-col justify-between hover:border-amber-900/20 hover:shadow-sm transition-all text-center">
           <div className="text-[10px] text-amber-900/50 uppercase tracking-wider font-sans">
-            流日司局 (Current Day)
+            流日司局
           </div>
           <div className="space-y-1">
             <div className="text-4xl font-extrabold font-serif text-amber-950">

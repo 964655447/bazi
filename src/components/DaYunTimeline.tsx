@@ -13,7 +13,7 @@ export default function DaYunTimeline({ baziResult }: DaYunTimelineProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-amber-900/10 pb-4 gap-4">
         <div>
           <h3 className="text-lg font-serif font-bold text-amber-950 flex items-center gap-2">
-            <span>◇</span> 大运起程气数 timeline
+            <span>◇</span> 大运起程气数历程
           </h3>
           <p className="text-xs text-amber-900/50 mt-1 font-sans">
             "一命运双行"：大运主管十年吉凶祸福势位

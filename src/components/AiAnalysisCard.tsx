@@ -7,6 +7,7 @@ interface AiAnalysisCardProps {
   baziResult: BaziChartResult;
   apiConfig: ApiConfig;
   onOpenApiSettings: () => void;
+  name?: string;
 }
 
 const LOADING_STEPS = [
@@ -19,7 +20,7 @@ const LOADING_STEPS = [
   "正在恭请AI命理大宗师深度融汇批注..."
 ];
 
-export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSettings }: AiAnalysisCardProps) {
+export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSettings, name }: AiAnalysisCardProps) {
   const [analysis, setAnalysis] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -43,6 +44,7 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
     return `你是一位精通中国传统命理学（八字神煞、大运流年、格局强弱）的专业命理学大师。请基于以下排盘数据，为缘主提供全面、温和、客观的深度命理分析报告：
 
 【基本信息】
+- 缘主姓名：${name || "未填写（请以'缘主'称呼）"}
 - 性别：${baziResult.gender}
 - 公历生日：${baziResult.birthTimeG}
 - 真太阳时：${baziResult.birthTimeLST || baziResult.birthTimeG} (出生地经度: ${baziResult.longitude || 116.4}°E, 城市: ${baziResult.cityName || "北京"})

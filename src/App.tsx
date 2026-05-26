@@ -7,11 +7,14 @@ import DaYunTimeline from "./components/DaYunTimeline";
 import FlowingTimeCard from "./components/FlowingTimeCard";
 import AiAnalysisCard from "./components/AiAnalysisCard";
 import ApiSettingsModal from "./components/ApiSettingsModal";
-import { Compass, BookOpen, Clock, RefreshCw, Sun, Sliders } from "lucide-react";
+import { Compass, BookOpen, Clock, RefreshCw, Sun, Sliders, BookmarkPlus } from "lucide-react";
 
 export default function App() {
   const [baziResult, setBaziResult] = useState<BaziChartResult | null>(null);
   const [isApiModalOpen, setIsApiModalOpen] = useState<boolean>(false);
+  const [showResult, setShowResult] = useState<boolean>(false);
+  const [currentName, setCurrentName] = useState<string>("");
+  const [isSaved, setIsSaved] = useState<boolean>(false);
   const [apiConfig, setApiConfig] = useState<ApiConfig>(() => {
     const saved = localStorage.getItem("bazi_api_config");
     if (saved) {
@@ -29,15 +32,16 @@ export default function App() {
     };
   });
 
-  // Initialize with a default chart so the user doesn't see a blank page!
-  // This is a brilliant professional touch: they immediately see an elegant sample chart on first load,
-  // making the site looks interactive and fully formed straightaway!
+  // Initialize with a default chart reference
   useState(() => {
     const defaultSample = compileBazi("1995-10-18 08:30", 116.4, "北京", "男");
     setBaziResult(defaultSample);
+    setCurrentName("");
+    setIsSaved(false);
   });
 
   const handleCalculate = (data: {
+    name?: string;
     birthTime: string;
     longitude: number;
     cityName: string;
@@ -45,6 +49,62 @@ export default function App() {
   }) => {
     const result = compileBazi(data.birthTime, data.longitude, data.cityName, data.gender);
     setBaziResult(result);
+    setCurrentName(data.name || "");
+    setShowResult(true);
+    setIsSaved(false);
+  };
+
+  const handleSaveFromResults = () => {
+    if (!baziResult) return;
+    
+    // Parse date and time
+    const [date, time] = baziResult.birthTimeG.split(" ");
+    
+    // Check if we are custom or preset LNG
+    const PRESETS = [
+      { name: "北京", lng: 116.4 },
+      { name: "上海", lng: 121.5 },
+      { name: "广州", lng: 113.3 },
+      { name: "深圳", lng: 114.1 },
+      { name: "成都", lng: 104.1 },
+      { name: "杭州", lng: 120.2 },
+      { name: "重庆", lng: 106.5 },
+      { name: "拉萨", lng: 91.1 },
+      { name: "乌鲁木齐", lng: 87.6 },
+      { name: "哈尔滨", lng: 126.6 },
+      { name: "西安", lng: 108.9 }
+    ];
+    
+    const matchedPreset = PRESETS.find(p => p.name === baziResult.cityName && Math.abs(p.lng - baziResult.longitude) < 0.1);
+    const isCustomLng = !matchedPreset;
+
+    const recordName = currentName.trim() || `缘主 (${date})`;
+    
+    const newRecord = {
+      id: Date.now().toString(),
+      name: recordName,
+      date,
+      time,
+      gender: baziResult.gender,
+      cityName: baziResult.cityName,
+      lng: baziResult.longitude,
+      isCustomLng
+    };
+
+    // Load existing records to merge
+    let existing: any[] = [];
+    const saved = localStorage.getItem("bazi_library_records");
+    if (saved) {
+      try {
+        existing = JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    const updated = [newRecord, ...existing.filter(r => r.name !== recordName || r.date !== date)];
+    localStorage.setItem("bazi_library_records", JSON.stringify(updated));
+    setIsSaved(true);
   };
 
   const handleTargetDateChange = (newResult: BaziChartResult) => {
@@ -52,9 +112,10 @@ export default function App() {
   };
 
   const handleReset = () => {
-    // Reset back to Beijing sample
+    // Reset back to Beijing sample and inputs
     const defaultSample = compileBazi("1995-10-18 08:30", 116.4, "北京", "男");
     setBaziResult(defaultSample);
+    setShowResult(false);
   };
 
   return (
@@ -95,47 +156,48 @@ export default function App() {
               className="flex items-center gap-1.5 text-xs text-[#4a4a40] hover:bg-[#5a5a40] hover:text-[#f5f5f0] border border-[#5a5a40] bg-transparent rounded-full px-4 py-1.5 font-bold transition-all cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              重置盘局
+              重置测算
             </button>
-            <a
-              href="#bazi-input-panel"
-              className="text-xs text-[#f5f5f0] bg-[#5a5a40] hover:bg-[#4a4a40] rounded-full px-4 py-1.5 font-bold transition-all shadow shadow-[#5a5a40]/10 cursor-pointer"
-            >
-              重新录入生日
-            </a>
+            {showResult && (
+              <button
+                onClick={() => setShowResult(false)}
+                className="text-xs text-[#f5f5f0] bg-[#5a5a40] hover:bg-[#4a4a40] rounded-full px-4 py-1.5 font-bold transition-all shadow shadow-[#5a5a40]/10 cursor-pointer flex items-center gap-1"
+              >
+                ← 返回修改生辰
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        {/* Banner with brief instructions */}
-        <div className="bg-white rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-sm border border-[#e5e5d5] text-[#4a4a40]">
-          {/* Decorative subtle sun symbol or background elements */}
-          <div className="absolute right-0 bottom-0 translate-x-12 translate-y-12 opacity-5 pointer-events-none">
-            <Compass className="w-80 h-80 text-[#5a5a40] rotate-12" />
-          </div>
-
-          <div className="max-w-2xl space-y-4 relative z-10">
-            <span className="text-xs bg-[#5a5a40] text-[#f5f5f0] px-3 py-0.5 rounded-full font-bold uppercase tracking-wider font-sans">
-              古天文学精演
-            </span>
-            <h2 className="text-2xl md:text-3xl font-black font-serif leading-tight text-[#5a5a40]">
-              差之双时，谬之千里。计算真太阳时对八字尤为要紧。
-            </h2>
-            <p className="text-[#8a8a70] text-sm leading-relaxed font-sans">
-              我们日常使用的北京时间（东八区）对应的是东经120度。而中国疆域广大，真实的太阳运行时间（真太阳时）要由您出生地的精确经度，加上地球轨道因偏心率及倾角产生的均时差（Equation of Time）共同算定。本工具深度融合专业天文轨迹求解，为您复原纯正古法四柱。
-            </p>
-          </div>
-        </div>
-
-        {/* Layout Split: Left Input, Right Bazi Result */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Input Form (Takes up 4 cols on large screens) */}
-          <div className="lg:col-span-5 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-[fadeIn_0.3s_ease-out]">
+        {!showResult ? (
+          /* 1. Input Screen: centered single-column for focus and simplicity */
+          <div className="max-w-2xl mx-auto space-y-6">
             <BaziInput onCalculate={handleCalculate} />
 
-            {/* Side-by-Side Astrology info references to make it educational and completed! */}
+            {/* Banner with brief instructions */}
+            <div className="bg-white rounded-2xl p-6 relative overflow-hidden shadow-sm border border-[#e5e5d5] text-[#4a4a40]">
+              {/* Decorative subtle sun symbol or background elements */}
+              <div className="absolute right-0 bottom-0 translate-x-12 translate-y-12 opacity-5 pointer-events-none">
+                <Compass className="w-48 h-48 text-[#5a5a40] rotate-12" />
+              </div>
+
+              <div className="space-y-3 relative z-10">
+                <span className="text-[10px] bg-[#5a5a40] text-[#f5f5f0] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider font-sans">
+                  古天文学精演
+                </span>
+                <h2 className="text-base font-bold font-serif leading-snug text-[#5a5a40]">
+                  差之双时，谬之千里。<br />计算真太阳时对平算八字尤为要紧。
+                </h2>
+                <p className="text-[#8a8a70] text-xs leading-relaxed font-sans mt-1">
+                  日常所用北京时间对应东经120度。由于中国疆域辽阔，而真实的命主受气时辰（真太阳时）须依据您出生地的精确经度，再结合地球公转产生的真平太阳时差共同算定。本系统深度集成古算历法解算，为您还原精准四柱。
+                </p>
+              </div>
+            </div>
+
+            {/* Side-by-Side Astrology info references */}
             <div className="bg-white border border-[#e5e5d5] rounded-2xl p-6 shadow-sm space-y-4 text-[#4a4a40]">
               <h4 className="font-serif font-bold text-[#5a5a40] border-b border-[#e5e5d5] pb-2 flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4 text-[#5a5a40]" />
@@ -157,9 +219,41 @@ export default function App() {
               </ul>
             </div>
           </div>
+        ) : (
+          /* 2. Results Screen: full width detailed layout */
+          <div className="max-w-4xl mx-auto space-y-8">
+            {/* Navigation back and header metadata */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/65 p-4 border border-[#e5e5d5] rounded-2xl shadow-sm">
+              <div>
+                <span className="text-xs bg-[#5a5a40] text-[#f5f5f0] px-3 py-1 rounded-full font-bold">
+                  ☯️ 乾坤排盘已定
+                </span>
+                <span className="ml-3 text-xs text-[#5a5a40] font-sans">
+                  缘主姓名: <strong className="text-[#5a5a40] font-bold font-serif">{currentName || "未名缘主"}</strong> &middot; 性别: <strong className="text-[#5a5a40] font-bold font-serif">{baziResult?.gender}</strong> &middot; 出生时间: {baziResult?.birthTimeG}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveFromResults}
+                  className={`flex items-center justify-center gap-1.5 text-xs rounded-full px-4 py-2.5 font-bold transition-all shadow-sm cursor-pointer border ${
+                    isSaved
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                      : "bg-[#ebebe0]/80 hover:bg-[#ebebe0] text-[#5a5a40] border-[#dcdcc8]"
+                  }`}
+                >
+                  <BookmarkPlus className="w-3.5 h-3.5" />
+                  {isSaved ? "已存入命理库" : "存入本地命理库"}
+                </button>
+                <button
+                  onClick={() => setShowResult(false)}
+                  className="flex items-center justify-center gap-1.5 text-xs text-[#f5f5f0] bg-[#5a5a40] hover:bg-[#4a4a40] rounded-full px-4 py-2.5 font-bold transition-all shadow shadow-[#5a5a40]/10 cursor-pointer"
+                >
+                  ← 返回修改生辰
+                </button>
+              </div>
+            </div>
 
-          {/* Right Column: Display Results (Takes up 7 cols on large screens) */}
-          <div className="lg:col-span-7 space-y-8">
             {baziResult ? (
               <div className="space-y-8">
                 {/* 1. Four Pillars Main Matrix */}
@@ -176,15 +270,32 @@ export default function App() {
                   baziResult={baziResult} 
                   apiConfig={apiConfig} 
                   onOpenApiSettings={() => setIsApiModalOpen(true)} 
+                  name={currentName}
                 />
+
+                {/* Bottom Back Button */}
+                <div className="flex justify-center pt-4">
+                  <button
+                    onClick={() => setShowResult(false)}
+                    className="flex items-center gap-2 text-sm text-[#f5f5f0] bg-[#5a5a40] hover:bg-[#4a4a40] rounded-full px-8 py-3.5 font-bold transition-all shadow-md shadow-[#5a5a40]/15 cursor-pointer font-serif"
+                  >
+                    ← 返回重新录入先天命符
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="bg-white p-12 text-center rounded-2xl border border-[#e5e5d5]">
-                <p className="text-[#8a8a70]">请在左侧点击“开启生辰排盘”以生成您的专属八字大盘。</p>
+                <p className="text-[#8a8a70]">未能成功加载排盘数据，请返回重新测算。</p>
+                <button
+                  onClick={() => setShowResult(false)}
+                  className="mt-4 inline-flex items-center gap-1.5 text-xs text-[#f5f5f0] bg-[#5a5a40] hover:bg-[#4a4a40] rounded-full px-4 py-2 font-bold transition-all cursor-pointer"
+                >
+                  返回输入界面
+                </button>
               </div>
             )}
           </div>
-        </div>
+        )}
       </main>
 
       {/* Astro Educational Footer */}
@@ -192,11 +303,11 @@ export default function App() {
         <div className="max-w-3xl mx-auto space-y-2">
           <p className="text-sm font-bold text-[#5a5a40] font-serif tracking-wider">千载国学 · 立法科学折算</p>
           <p className="text-xs leading-relaxed text-[#8a8a70] font-sans">
-            本工具基于比利时天文学家 Jean Meeus 《Astronomical Algorithms》（天文算法）标准日相公式，结合太阳黄经精确求解二十四节气。真太阳时折算支持自定义和调节。AI大报告由 Gemini-3.5-flash 大模型全程解析。
+            本工具基于天文学标准日相公式，结合黄经精确求解二十四节气。真太阳时折算支持自定义和调节。AI大报告由预设大语言模型全程解析。
           </p>
         </div>
         <div className="text-[10px] opacity-40 font-mono">
-          &copy; React Bazi Calculator Master. All rights reserved.
+          &copy; 2026 生辰八字排盘大宗师. 保留所有权利。
         </div>
       </footer>
 
