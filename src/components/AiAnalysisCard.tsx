@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { BaziChartResult, ApiConfig } from "../types";
-import { Sparkles, Loader2, Copy, Check, FileText } from "lucide-react";
+import { Sparkles, Loader2, Copy, Check, FileText, Settings } from "lucide-react";
 
 interface AiAnalysisCardProps {
   baziResult: BaziChartResult;
@@ -161,13 +161,23 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
         </div>
 
         {!loading && !analysis && (
-          <button
-            onClick={fetchAnalysis}
-            className="flex items-center gap-2 bg-[#5a5a40] hover:bg-[#4a4a40] text-[#f5f5f0] px-5 py-2.5 rounded-full font-bold text-sm shadow hover:shadow-md transition-all cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4" />
-            批览八字
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onOpenApiSettings}
+              className="flex items-center gap-1.5 bg-[#ebebe0]/80 hover:bg-[#ebebe0] text-[#5a5a40] border border-[#dcdcc8] px-4 py-2 rounded-full font-bold text-xs md:text-sm transition-all cursor-pointer"
+              title="配置 AI 批释大引擎"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              配置引擎
+            </button>
+            <button
+              onClick={fetchAnalysis}
+              className="flex items-center gap-1.5 bg-[#5a5a40] hover:bg-[#4a4a40] text-[#f5f5f0] px-4 py-2 rounded-full font-bold text-xs md:text-sm shadow hover:shadow-md transition-all cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              批览八字
+            </button>
+          </div>
         )}
       </div>
 
@@ -192,26 +202,36 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
         <div className="space-y-6">
           <div className="p-5 bg-rose-50 border border-rose-200 rounded-2xl text-center space-y-3">
             <p className="text-xs md:text-sm font-semibold text-rose-800 leading-relaxed">{error}</p>
-            <button
-              onClick={() => {
-                // Open Settings Modal directly if the error looks like it needs keys
-                if (
-                  error.includes("密钥") || 
-                  error.includes("API") || 
-                  error.includes("API Key") || 
-                  error.includes("apiKey") || 
-                  error.includes("使用完") || 
-                  error.includes("Key")
-                ) {
-                  onOpenApiSettings();
-                } else {
-                  fetchAnalysis();
-                }
-              }}
-              className="bg-rose-800 text-white text-xs px-5 py-2 rounded-full hover:bg-neutral-800 transition-colors cursor-pointer font-bold"
-            >
-              {error.includes("密钥") || error.includes("API") || error.includes("使用完") || error.includes("Key") ? "⚙️ 打开 API 密钥设置" : "重新恭请解读"}
-            </button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                onClick={onOpenApiSettings}
+                className="bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-700 text-xs px-5 py-2 rounded-full transition-colors cursor-pointer font-bold flex items-center gap-1"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                ⚙️ 配置 AI 大引擎
+              </button>
+              <button
+                onClick={() => {
+                  // Open Settings Modal directly if the error looks like it needs keys
+                  if (
+                    error.includes("密钥") || 
+                    error.includes("API") || 
+                    error.includes("API Key") || 
+                    error.includes("apiKey") || 
+                    error.includes("使用完") || 
+                    error.includes("Key")
+                  ) {
+                    onOpenApiSettings();
+                  } else {
+                    fetchAnalysis();
+                  }
+                }}
+                className="bg-rose-800 text-white text-xs px-5 py-2 rounded-full hover:bg-neutral-800 transition-colors cursor-pointer font-bold"
+              >
+                {error.includes("密钥") || error.includes("API") || error.includes("使用完") || error.includes("Key") ? "⚙️ 打开 API 密钥设置" : "重新恭请解读"}
+              </button>
+            </div>
           </div>
           
           {/* Prompt Backup Section */}
@@ -279,7 +299,15 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
               <FileText className="w-4 h-4 text-[#5a5a40]" />
               八字神算解梦大玄阅 ({apiConfig.provider === "system" ? "系统默认引擎" : `私有 API: ${apiConfig.provider.toUpperCase()}`})
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+              <button
+                onClick={onOpenApiSettings}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs text-[#5a5a40] hover:bg-[#ebebe0] bg-white border border-[#dcdcc8] rounded-full px-4 py-2 transition-colors cursor-pointer font-bold"
+                title="配置 AI 批释大引擎"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                配置引擎
+              </button>
               <button
                 onClick={handleCopy}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs text-[#4a4a40] hover:bg-[#ebebe0] bg-white border border-[#dcdcc8] rounded-full px-4 py-2 transition-colors cursor-pointer font-bold"
