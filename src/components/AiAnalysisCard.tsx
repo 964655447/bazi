@@ -2,31 +2,51 @@ import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { BaziChartResult, ApiConfig } from "../types";
 import { Sparkles, Loader2, Copy, Check, FileText, Settings } from "lucide-react";
+import { compileZiwei } from "../utils/ziwei";
 
 interface AiAnalysisCardProps {
   baziResult: BaziChartResult;
   apiConfig: ApiConfig;
   onOpenApiSettings: () => void;
   name?: string;
+  mode?: "bazi" | "ziwei";
 }
 
 const LOADING_STEPS = [
   "正在精确折算出生地经度真太阳时...",
   "正在校合立春交节，测算月柱分界...",
   "正在依据日主（日天干）推算生克十神...",
-  "正在检索天乙贵人、驿马、桃花等神煞星盘...",
-  "正在校准大运起运岁数及交运流年气势...",
-  "正在结合当前流年、流月与四柱原局形成会照度...",
-  "正在恭请AI命理大宗师深度融汇批注..."
+  "正在检索天乙贵人、福星煞曜...",
+  "正在排算大运轨迹与流年交接...",
+  "大宗师正在融汇八字局象，酝酿理法评注..."
 ];
 
-export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSettings, name }: AiAnalysisCardProps) {
+const ZIWEI_LOADING_STEPS = [
+  "正在精确定位出生时辰并折算太阳时...",
+  "正在排定命身星座，锁定十二宫干起讫...",
+  "正在精确测度水二局、火六局等纳音局度...",
+  "正在安星南北斗十四主耀...",
+  "正在布列青龙白虎以及旬空、天哭等副星...",
+  "大宗师正在校正紫微乾坤盘，推算玄空妙解...",
+  "正在构想紫微精妙印记与星体飞显四化..."
+];
+
+export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSettings, name, mode = "bazi" }: AiAnalysisCardProps) {
   const [analysis, setAnalysis] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [stepIdx, setStepIdx] = useState<number>(0);
   const [copied, setCopied] = useState<boolean>(false);
   const [promptCopied, setPromptCopied] = useState<boolean>(false);
+
+  // Clear previous analysis when mode switches
+  useEffect(() => {
+    setAnalysis("");
+    setError("");
+    setLoading(false);
+  }, [mode]);
+
+  const activeLoadingSteps = mode === "ziwei" ? ZIWEI_LOADING_STEPS : LOADING_STEPS;
 
   const buildUserPrompt = () => {
     if (!baziResult) return "";
@@ -41,7 +61,54 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
       return cycles.slice(0, 5).map((c: any) => `自${c.startAge}岁起行 [${c.stem}${c.branch}] 运(十神: ${c.tenGod}, 纳音: ${c.nayin || "无"}, 星运: ${c.changsheng || "无"})`).join("；") || "无";
     };
 
-    return `你是一位精通中国传统命理学（八字神煞、大运流年、格局强弱）的专业命理学大师。请基于以下排盘数据，为缘主提供全面、温和、客观的深度命理分析报告：
+    const compileZiweiText = () => {
+      try {
+        const zw = compileZiwei(baziResult.birthTimeG, baziResult.longitude, baziResult.cityName, baziResult.gender, name || "缘主");
+        let txt = `【紫微斗数命盘参佐（星度）】\n- 农历出生时间：${zw.birthTimeL}\n- 命宫局数：${zw.mingJu}\n- 命主守护：${zw.mingZhu} / 身主守护：${zw.shenZhi}\n- 岁君乾坤：${zw.yearGanZhi}\n`;
+        txt += `- 命盘十二宫分布与坐守星曜：\n`;
+        zw.palaces.forEach(p => {
+          const sihuaStr = Object.entries(p.sihua).map(([st, sh]) => `${st}·${sh}`).join(", ");
+          txt += `  * ${p.palaceName}在 [${p.stemName}${p.branchName}] 宫 (大限: ${p.decadalStart}-${p.decadalEnd}岁), 主星: [${p.majorStars.join(", ") || "无主星"}], 吉星: [${p.luckyStars.join(", ") || "无"}], 煞宿: [${p.harmStars.join(", ") || "无"}]${sihuaStr ? `, 四化: [${sihuaStr}]` : ""}\n`;
+        });
+        return txt;
+      } catch (e) {
+        return "";
+      }
+    };
+
+    if (mode === "ziwei") {
+      return `你是一位精通中国传统命理学（紫微斗数、星曜格局、十二宫位、飞星四化、大小限流年）的紫微斗数命理学大宗师。
+请基于以下排盘数据（紫微斗数十二宫与星曜守护组合），为缘主提供一份全面、精准、文雅、开阔的独立紫微斗数命理深度批注分析报告：
+
+【基本信息】
+- 缘主姓名：${name || "未填写（请以'缘主'称呼）"}
+- 性别：${baziResult.gender}
+- 公历生日：${baziResult.birthTimeG}
+- 真太阳时：${baziResult.birthTimeLST || baziResult.birthTimeG} (出生地经度: ${baziResult.longitude || 116.4}°E, 城市: ${baziResult.cityName || "北京"})
+
+${compileZiweiText()}
+
+请务必按照以下严谨、温馨、开明大气的模块输出一份结构精美的 Markdown 报告，不要乱造，结合星宿印记（相辅相成，融会贯通），语言要富有国学精雅、哲学宽阔、科学理性的气派：
+
+1. 🌌 **命宫本源与自我身心（格局与主曜）**：
+   - 着重解读【命宫】与【身宫】的主星曜（如其吉凶坐守、三方四正的加持、辅星煞宿的掺杂）。
+   - 解析命宿乾坤五行局（如水二局、火六局）带来的禀赋，分析整体星盘的气象（如是否构成量级格局，如极向离明、紫府同宫等，或者属于寻常安稳盘）。
+2. 💫 **六亲缘分与情感交织（夫妻、父母、子女、交友宫）**：
+   - 提取夫妻宫、父母宫、子女宫等坐守，解析命主与父母长辈、配偶伴侣、下一代子嗣以及外界朋友的宿缘与沟通建议。
+3. 💼 **财帛官禄、实业田宅之宏谋**：
+   - 结合【财帛宫】、【官禄宫】、【田宅宫】坐守，分析天赋职业长项、求财机缘、固定产业吉凶及事业成就高低的升降节律。
+4. 🩺 **疾厄体格与情志养护**：
+   - 解读【疾厄宫】星曜及对宫守护，对身体体质强弱、易损器官及心理情绪情志的平衡调适，给予大宗师的善意调心之语。
+5. 🗺️ **大限流转与当下安神提示**：
+   - 解读当期大限（十年来路）及当前流年（${baziResult.flowingTime?.year || "无"}）星运流转变化、双禄或飞星四化的互动关系。
+   - 为缘主当下的精神状态、求职、投资或生活抉择，提供极具哲学启发性的安神及修德寄语。
+
+请用古典宽厚、优雅亲切、理智客观的修心语气撰写，排版极为精美，善用 Markdown 分割线、表格和富有国学美感的区块（💡）。`;
+    }
+
+    // Default or Bazi Mode
+    return `你是一位精通中国传统命理学（子平八字、八字神煞、格局推演、十神旺衰、大运流年）的专业八字命理学大宗师。
+请基于以下排盘数据（生辰八字四柱与神煞气势），为缘主提供全面、温和、客观的深度八字命理分析报告：
 
 【基本信息】
 - 缘主姓名：${name || "未填写（请以'缘主'称呼）"}
@@ -64,24 +131,25 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
 【大运气势】
 - 起运年纪：${baziResult.daYun?.transitAgeDescription || "无"} (交运公历时间：${baziResult.daYun?.transitExactDate || "无"})
 - 大运前列：${formatDaYunCycles()}
-
-【当前运势流转（今日运学）】
-- 当前流年：${baziResult.flowingTime?.year || "无"} (十神: ${baziResult.flowingTime?.yearTenGod || "无"}, 纳音: ${baziResult.flowingTime?.yearNayin || "无"})
+- 当前流年：${baziResult.flowingTime?.year || "无"}
 - 当前流月：${baziResult.flowingTime?.month || "无"} (十神: ${baziResult.flowingTime?.monthTenGod || "无"})
 - 当前流日：${baziResult.flowingTime?.day || "无"} (十神: ${baziResult.flowingTime?.dayTenGod || "无"})
 
-请务必按照以下严谨、温馨、大器的模块输出一份结构精美的 Markdown 报告，不要胡乱编造，语言要富有国学韵味和哲学内涵：
+请务必按照以下严谨、温馨、开明大气的模块输出一份结构精美的 Markdown 报告，不要胡乱捏造，语言要富有国学精雅、哲学宽阔、科学理性的气派：
 
-1. 🌌 **命局格局与五行强弱分析**：详细剖析缘主的日主心性（如${baziResult.fourPillars.day.stem.name}特点）、八字五行分布（金木水火土相对强弱），判定原局的燥湿寒暖与格局（如正印格、食神格、建禄格等），给出力气和调候用神、喜神、忌神建议。
-2. 💫 **神煞印记与性格本源**：结合盘中的主要神煞（如天乙贵人、文昌贵人、驿马、桃花等）对性格、天资、精神世界进行细致解读。
-3. 💼 **事业宏图与财运指南**：从十神财官禄位出发，分析事业适合方向（学术、企管、创意、商贸等）、财源状态、一生财运高低波动及守财建议。
-4. 🩺 **健康关怀与平安指引**：依据五行盛盛衰强，提供养生和身体器官预防保养指引。
-5. 🗺️ **大运流年深度解惑与改运建议**：
-   - 评点排盘中前列大运行运的起伏（哪段运势利事业，哪段利积累）。
-   - 结合当前的流年（${baziResult.flowingTime?.year || "无"}）以及流日流月，给出应对当前运势时局的应对心境、趋利避害的修心建议。
-   - 提供极具中国哲理的人生开导。
+1. 🌌 **命局干支格局与喜忌神判定**：
+   - 详细剖析日主天干心性（如${baziResult.fourPillars.day.stem.name}特点）与五行强弱分布（金木水火土相对分量）。
+   - 判定原局属于何种格局（如正财格、偏官格等），解算燥湿寒暖，判定用神、喜神、忌神。
+2. 💫 **地支藏干与神煞交辉**：
+   - 融合地支藏干深藏之气与神煞（如天乙贵人、文昌、桃花、太极、空亡）来探究性格潜能、天资才气与缘分。
+3. 💼 **事业宏图、十神财官禄位分析**：
+   - 结合正官、七杀、正财、偏财、食神、伤官等十神的分布与气势，剖析适合的工作（商业、技术、艺术、行政等）及财气高低、防守建议。
+4. 🩺 **五行宣泄与健康养生**：
+   - 依据五行缺失与过旺状况，给出在经络体格方面的提示 and 调候平衡调理建议。
+5. 🗺️ **大运流转与流岁当下的开释**：
+   - 评点大运起伏（如交好运的时点），并针对当前流年（${baziResult.flowingTime?.year || "无"}）流月流日的天干地支生克，对命主当下的现实处境给出智慧启迪、修心建议。
 
-请用古典沉稳、鼓励乐观的语气回复，排版精美，擅用 Markdown 表格和区块。`;
+请用古典宽厚、优雅亲切、理智客观的修心语气撰写，排版极为精美，善用 Markdown 分割线、表格和富有国学美感的区块（💡）。`;
   };
 
   const handleCopyPrompt = () => {
@@ -97,13 +165,13 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
     if (loading) {
       setStepIdx(0);
       interval = setInterval(() => {
-        setStepIdx((prev) => (prev + 1) % LOADING_STEPS.length);
+        setStepIdx((prev) => (prev + 1) % activeLoadingSteps.length);
       }, 3000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [loading]);
+  }, [loading, activeLoadingSteps]);
 
   const fetchAnalysis = async () => {
     setLoading(true);
@@ -117,7 +185,8 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
         },
         body: JSON.stringify({ 
           baziData: baziResult,
-          apiConfig: apiConfig
+          apiConfig: apiConfig,
+          customPrompt: buildUserPrompt()
         })
       });
 
@@ -148,15 +217,17 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
   };
 
   return (
-    <div className="bg-white border border-[#e5e5d5] rounded-2xl p-6 md:p-8 shadow-sm space-y-6 text-[#4a4a40]">
+    <div className="bg-white border border-[#e5e5d5] rounded-2xl p-6 md:p-8 shadow-sm space-y-6 text-[#4a4a40]" id="ai_analysis_section">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#e5e5d5] pb-4">
         <div>
           <h3 className="text-lg font-serif font-bold text-[#5a5a40] flex items-center gap-2">
-            <span>◇</span> 智能 AI 命理批注（大宗师深度解读）
+            <span>◇</span> {mode === "ziwei" ? "智能 AI 紫微星命批注（大宗师星宿参合）" : "智能 AI 八字命理批注（大宗师深度解读）"}
           </h3>
           <p className="text-xs text-[#8a8a70] mt-1">
-            融合古典《渊海子平》、《三命通会》精髓与大语言模型算力，作多维度剖析
+            {mode === "ziwei" 
+              ? "依十四曜主星坐守、十二宫命运轨辙与飞星四化，作全维度深度星运推演" 
+              : "融合子平五行旺衰、神煞星光、起运岁期，为您提供万字深度八字宏篇大论"}
           </p>
         </div>
 
@@ -175,7 +246,7 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
               className="flex items-center gap-1.5 bg-[#5a5a40] hover:bg-[#4a4a40] text-[#f5f5f0] px-4 py-2 rounded-full font-bold text-xs md:text-sm shadow hover:shadow-md transition-all cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              批览八字
+              {mode === "ziwei" ? "推演星曜" : "批览八字"}
             </button>
           </div>
         )}
@@ -188,7 +259,7 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
           <div className="space-y-1.5">
             <h4 className="text-[#4a4a40] font-serif font-bold text-lg">大宗师正在详推乾坤...</h4>
             <div className="text-sm text-[#8a8a70] font-serif animate-pulse max-w-md mx-auto transition-all duration-500">
-              「 {LOADING_STEPS[stepIdx]} 」
+              「 {activeLoadingSteps[stepIdx]} 」
             </div>
           </div>
           <p className="text-[10px] text-[#8a8a70]/60 max-w-xs font-mono">
@@ -213,7 +284,6 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
               </button>
               <button
                 onClick={() => {
-                  // Open Settings Modal directly if the error looks like it needs keys
                   if (
                     error.includes("密钥") || 
                     error.includes("API") || 
@@ -297,7 +367,7 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
           <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-[#ebebe0]/40 px-4 py-3 rounded-xl border border-[#dcdcc8]">
             <div className="flex items-center gap-2 text-xs text-[#5a5a40] font-serif font-bold">
               <FileText className="w-4 h-4 text-[#5a5a40]" />
-              八字神算解梦大玄阅 ({apiConfig.provider === "system" ? "系统默认引擎" : `私有 API: ${apiConfig.provider.toUpperCase()}`})
+              {mode === "ziwei" ? "紫微星曜神化命学大玄阅" : "八字神算解梦大玄阅"} ({apiConfig.provider === "system" ? "系统默认引擎" : `私有 API: ${apiConfig.provider.toUpperCase()}`})
             </div>
             <div className="flex gap-2 w-full sm:w-auto flex-wrap">
               <button
@@ -326,34 +396,36 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
           </div>
 
           <div className="prose prose-stone max-w-none text-[#4a4a40] p-6 bg-white border border-[#e5e5d5] rounded-2xl leading-relaxed text-sm md:text-base font-serif space-y-4 shadow-inner">
-            <ReactMarkdown
-              components={{
-                h1: ({ children }) => <h1 className="text-lg md:text-xl font-serif font-extrabold text-[#5a5a40] border-b border-[#e5e5d5] pb-2 mt-6 mb-4">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-base md:text-lg font-serif font-extrabold text-[#4a4a40] border-l-4 border-[#5a5a40] pl-3 mt-5 mb-3">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-sm md:text-base font-serif font-bold text-[#5a5a40] mt-4 mb-2">{children}</h3>,
-                p: ({ children }) => <p className="mb-4 leading-relaxed tracking-wide text-[#4a4a40]/90 text-xs md:text-sm">{children}</p>,
-                ul: ({ children }) => <ul className="list-disc pl-5 mb-4 space-y-1 text-xs md:text-sm">{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal pl-5 mb-4 space-y-1 text-xs md:text-sm">{children}</ol>,
-                li: ({ children }) => <li className="text-[#4a4a40]/80">{children}</li>,
-                table: ({ children }) => (
-                  <div className="overflow-x-auto my-4 border border-[#e5e5d5] rounded-xl bg-[#f5f5f0]/30 shadow-sm">
-                    <table className="min-w-full text-xs sm:text-sm text-left">{children}</table>
-                  </div>
-                ),
-                thead: ({ children }) => <thead className="bg-[#ebebe0]/50 border-b border-[#e5e5d5] font-bold text-[#4a4a40]">{children}</thead>,
-                tbody: ({ children }) => <tbody className="divide-y divide-[#e5e5d5]">{children}</tbody>,
-                tr: ({ children }) => <tr className="hover:bg-[#ebebe0]/10 transition-colors">{children}</tr>,
-                th: ({ children }) => <th className="p-3 font-semibold text-xs">{children}</th>,
-                td: ({ children }) => <td className="p-3 font-serif text-xs">{children}</td>,
-                blockquote: ({ children }) => (
-                  <blockquote className="border-l-4 border-[#5a5a40]/60 bg-[#ebebe0]/40 p-4 rounded-r-xl italic my-4 text-[#4a4a40]/85 text-xs md:text-sm">
-                    {children}
-                  </blockquote>
-                )
-              }}
-            >
-              {analysis}
-            </ReactMarkdown>
+            <div className="markdown-body">
+              <ReactMarkdown
+                components={{
+                  h1: ({ children }) => <h1 className="text-xl md:text-2xl font-serif font-black text-[#5a5a40] border-b-2 border-[#e5e5d5] pb-2.5 mt-8 mb-5">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-lg md:text-xl font-serif font-black text-[#4a4a40] border-l-4 border-[#5a5a40] pl-4.5 mt-6 mb-4">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-base md:text-lg font-serif font-black text-[#5a5a40] mt-5 mb-3">{children}</h3>,
+                  p: ({ children }) => <p className="mb-5.5 leading-relaxed tracking-wide text-[#3a3a30] text-sm sm:text-[15.5px] md:text-base font-serif font-medium">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc pl-6 mb-5.5 space-y-2 text-sm sm:text-[15.5px] md:text-base font-serif font-medium text-[#3a3a30]">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-6 mb-5.5 space-y-2 text-sm sm:text-[15.5px] md:text-base font-serif font-medium text-[#3a3a30]">{children}</ol>,
+                  li: ({ children }) => <li className="text-[#3a3a30]/90 font-serif font-medium">{children}</li>,
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-5 border border-[#e5e5d5] rounded-xl bg-[#f5f5f0]/40 shadow-sm">
+                      <table className="min-w-full text-xs sm:text-sm md:text-base text-left font-serif">{children}</table>
+                    </div>
+                  ),
+                  thead: ({ children }) => <thead className="bg-[#ebebe0]/60 border-b border-[#e5e5d5] font-black text-[#3a3a30]">{children}</thead>,
+                  tbody: ({ children }) => <tbody className="divide-y divide-[#e5e5d5]">{children}</tbody>,
+                  tr: ({ children }) => <tr className="hover:bg-[#ebebe0]/15 transition-colors">{children}</tr>,
+                  th: ({ children }) => <th className="p-3.5 font-bold text-xs sm:text-sm md:text-base text-stone-900">{children}</th>,
+                  td: ({ children }) => <td className="p-3.5 font-serif text-xs sm:text-sm md:text-base text-stone-800 font-medium">{children}</td>,
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-4 border-[#5a5a40] bg-[#ebebe0]/30 p-4.5 rounded-r-xl italic my-5 text-[#3a3a30] text-sm sm:text-[15.5px] md:text-base font-serif font-medium shadow-2xs">
+                      {children}
+                    </blockquote>
+                  )
+                }}
+              >
+                {analysis}
+              </ReactMarkdown>
+            </div>
           </div>
         </div>
       )}
@@ -366,9 +438,11 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
               <Sparkles className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <h4 className="text-sm font-bold text-[#4a4a40] font-serif">开启智能解命批释</h4>
+              <h4 className="text-sm font-bold text-[#4a4a40] font-serif">{mode === "ziwei" ? "开启智能紫微星位批释" : "开启智能八字五行李法批释"}</h4>
               <p className="text-xs text-[#8a8a70] leading-relaxed font-sans px-4">
-                点击上方“批览八字”按钮，将原盘十神、地支藏干、二十四节气、神煞以及生肖大运输送给 AI 大宗师，为您写就一份上千字、深中肯綮的深度乾坤流年分析大报告。
+                {mode === "ziwei"
+                  ? "点击上方“推演星曜”按钮，将岁干局度、十四主宿、吉煞曜宿分布与飞星四化输送给 AI 大宗师，为您写就一份上千字、深中肯綮的深度紫微命运星轨大报告。"
+                  : "点击上方“批览八字”按钮，将原盘十神、地支藏干、二十四节气、神煞以及生肖大运输送给 AI 大宗师，为您写就一份上千字、深中肯綮的深度乾坤流年分析大报告。"}
               </p>
             </div>
           </div>

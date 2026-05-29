@@ -3,6 +3,7 @@ import { compileBazi } from "./utils/astronomy";
 import { BaziChartResult, ApiConfig } from "./types";
 import BaziInput from "./components/BaziInput";
 import BaziPillarsCard from "./components/BaziPillarsCard";
+import ZiweiChartCard from "./components/ZiweiChartCard";
 import DaYunTimeline from "./components/DaYunTimeline";
 import FlowingTimeCard from "./components/FlowingTimeCard";
 import AiAnalysisCard from "./components/AiAnalysisCard";
@@ -15,6 +16,7 @@ export default function App() {
   const [showResult, setShowResult] = useState<boolean>(false);
   const [currentName, setCurrentName] = useState<string>("");
   const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [activeSystem, setActiveSystem] = useState<"bazi" | "ziwei">("bazi");
   const [apiConfig, setApiConfig] = useState<ApiConfig>(() => {
     const saved = localStorage.getItem("bazi_api_config");
     if (saved) {
@@ -46,10 +48,12 @@ export default function App() {
     longitude: number;
     cityName: string;
     gender: "男" | "女";
+    system: "bazi" | "ziwei";
   }) => {
     const result = compileBazi(data.birthTime, data.longitude, data.cityName, data.gender);
     setBaziResult(result);
     setCurrentName(data.name || "");
+    setActiveSystem(data.system);
     setShowResult(true);
     setIsSaved(false);
   };
@@ -256,21 +260,55 @@ export default function App() {
 
             {baziResult ? (
               <div className="space-y-8">
-                {/* 1. Four Pillars Main Matrix */}
-                <BaziPillarsCard baziResult={baziResult} />
+                {/* Elegant system toggle tabs on results screen */}
+                <div className="bg-white border border-[#e5e5d5] rounded-2xl p-1.5 flex gap-1 shadow-sm select-none" id="results_tab_nav">
+                  <button
+                    onClick={() => setActiveSystem("bazi")}
+                    className={`flex-1 py-3 px-4 rounded-xl font-serif font-bold text-sm md:text-base flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      activeSystem === "bazi"
+                        ? "bg-[#5a5a40] text-[#f5f5f0] shadow-md"
+                        : "text-[#8a8a70] hover:text-[#5a5a40] hover:bg-[#ebebe0]/40"
+                    }`}
+                  >
+                    <span>🌌</span> 生辰八字命盘
+                  </button>
+                  <button
+                    onClick={() => setActiveSystem("ziwei")}
+                    className={`flex-1 py-3 px-4 rounded-xl font-serif font-bold text-sm md:text-base flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      activeSystem === "ziwei"
+                        ? "bg-[#5a5a40] text-[#f5f5f0] shadow-md"
+                        : "text-[#8a8a70] hover:text-[#5a5a40] hover:bg-[#ebebe0]/40"
+                    }`}
+                  >
+                    <span>💫</span> 紫微斗数星盘
+                  </button>
+                </div>
 
-                {/* 2. Da Yun Timeline Details */}
-                <DaYunTimeline baziResult={baziResult} />
+                {activeSystem === "bazi" ? (
+                  <>
+                    {/* 1. Four Pillars Main Matrix */}
+                    <BaziPillarsCard baziResult={baziResult} />
 
-                {/* 3. Flowing time / Current annual analysis */}
-                <FlowingTimeCard baziResult={baziResult} onTargetDateChange={handleTargetDateChange} />
+                    {/* 2. Da Yun Timeline Details */}
+                    <DaYunTimeline baziResult={baziResult} />
 
-                {/* 4. Deep AI Bazi Interpretation */}
+                    {/* 3. Flowing time / Current annual analysis */}
+                    <FlowingTimeCard baziResult={baziResult} onTargetDateChange={handleTargetDateChange} />
+                  </>
+                ) : (
+                  <>
+                    {/* 1.5 Ziwei Doushu Chart */}
+                    <ZiweiChartCard baziResult={baziResult} name={currentName} />
+                  </>
+                )}
+
+                {/* 4. Deep AI Interpretation */}
                 <AiAnalysisCard 
                   baziResult={baziResult} 
                   apiConfig={apiConfig} 
                   onOpenApiSettings={() => setIsApiModalOpen(true)} 
                   name={currentName}
+                  mode={activeSystem}
                 />
 
                 {/* Bottom Back Button */}

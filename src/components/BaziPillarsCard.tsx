@@ -63,7 +63,7 @@ export default function BaziPillarsCard({ baziResult }: BaziPillarsCardProps) {
         </h3>
 
         <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-5">
-          {pillarsList.map((col, index) => {
+          {pillarsList.map((col, idx) => {
             const isDayMaster = col.key === "day";
             const elementStyleS = getElementStyle(col.pillar.stem.element);
             const elementStyleB = getElementStyle(col.pillar.branch.element);
@@ -78,83 +78,83 @@ export default function BaziPillarsCard({ baziResult }: BaziPillarsCardProps) {
                 }`}
               >
                 {/* Pillar Header */}
-                <div className={`py-2 text-xs md:text-sm font-serif font-extrabold ${
+                <div className={`py-3 text-xs md:text-sm font-serif font-black ${
                   isDayMaster ? "bg-[#b22222] text-[#fcfaf2]" : "bg-amber-950 text-[#fcfaf2]"
                 }`}>
                   {col.label}
-                  <span className="block text-[10px] opacity-80 font-normal font-sans mt-0.5">{col.mainField}</span>
+                  <span className="block text-[11px] opacity-90 font-bold font-sans mt-0.5">{col.mainField}</span>
                 </div>
 
                 {/* Main Star (Ten God) */}
-                <div className="py-2.5 border-b border-dashed border-amber-900/10 text-xs md:text-sm font-bold text-amber-900">
-                  {isDayMaster ? <span className="text-[#b22222] font-serif underline decoration-wavy">日主(己身)</span> : col.pillar.stem.tenGod}
+                <div className="py-3 border-b border-dashed border-amber-900/10 text-xs sm:text-sm md:text-base font-black text-amber-950 bg-amber-50/10">
+                  {isDayMaster ? <span className="text-[#b22222] font-serif underline decoration-wavy">日主 (己身)</span> : col.pillar.stem.tenGod}
                 </div>
 
                 {/* Heavenly Stem Display */}
-                <div className={`p-4 border-b border-dashed border-amber-900/10 flex flex-col items-center gap-1 ${elementStyleS}`}>
-                  <span className="text-2xl md:text-4xl font-extrabold font-serif">{col.pillar.stem.name}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-white/55 text-xs text-opacity-90 leading-none">
+                <div className={`p-4 md:p-5 border-b border-dashed border-amber-900/10 flex flex-col items-center gap-1.5 ${elementStyleS}`}>
+                  <span className="text-3xl md:text-5xl font-black font-serif tracking-tight">{col.pillar.stem.name}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full border bg-white/70 text-amber-950 font-bold leading-none">
                     {col.pillar.stem.polarity}{col.pillar.stem.element}
                   </span>
                 </div>
 
                 {/* Earthly Branch Display */}
-                <div className={`p-4 border-b border-dashed border-amber-900/10 flex flex-col items-center gap-1 ${elementStyleB}`}>
-                  <span className="text-2xl md:text-4xl font-extrabold font-serif">{col.pillar.branch.name}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-white/55 text-xs text-opacity-90 leading-none">
+                <div className={`p-4 md:p-5 border-b border-dashed border-amber-900/10 flex flex-col items-center gap-1.5 ${elementStyleB}`}>
+                  <span className="text-3xl md:text-5xl font-black font-serif tracking-tight">{col.pillar.branch.name}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full border bg-white/70 text-amber-950 font-bold leading-none">
                     {col.pillar.branch.polarity}{col.pillar.branch.element}
                   </span>
                 </div>
 
                 {/* Celestial Fortune Stage (星运) */}
-                <div className="py-3 bg-amber-50/20 text-xs text-amber-950 font-bold border-b border-dashed border-amber-900/10">
-                  <span className="text-[10px] font-normal text-amber-900/50 block leading-none mb-1">十二星运</span>
-                  <span className="text-[#b22222] font-serif font-extrabold">{col.pillar.branch.changsheng}</span>
+                <div className="py-3 bg-amber-50/20 text-xs sm:text-sm text-amber-950 font-extrabold border-b border-dashed border-amber-900/10">
+                  <span className="text-[11px] font-bold text-amber-900/60 block leading-none mb-1">十二星运</span>
+                  <span className="text-[#b22222] font-serif font-black text-xs sm:text-sm">{col.pillar.branch.changsheng}</span>
                 </div>
 
                 {/* Earthly Branch Hidden Stems (地支藏干) */}
-                <div className="p-2 sm:p-3 border-b border-dashed border-amber-900/10 space-y-1.5 text-left text-xs text-amber-950 font-sans min-h-[90px] flex flex-col justify-start">
-                  <span className="text-[10px] font-normal text-amber-900/40 text-center block mb-1">藏干副星</span>
+                <div className="p-2 sm:p-3 border-b border-dashed border-amber-900/10 space-y-2 text-left text-xs text-amber-950 font-sans min-h-[105px] flex flex-col justify-start">
+                  <span className="text-[11px] font-bold text-amber-900/60 text-center block mb-1">藏干副星</span>
                   {col.pillar.branch.hiddenStems.map((hs, hidx) => (
                     <div
                       key={hidx}
-                      className={`flex justify-between items-center text-[10px] sm:text-xs px-1.5 py-0.5 rounded ${
+                      className={`flex justify-between items-center text-xs px-2 py-0.5 rounded ${
                         hs.isPrincipal 
-                          ? "bg-amber-100/40 border border-amber-900/10 font-bold" 
-                          : "text-amber-900/60"
+                          ? "bg-amber-100 border border-amber-900/20 font-black text-amber-950" 
+                          : "text-amber-900 font-medium"
                       }`}
                     >
-                      <span className="font-serif font-extrabold">{hs.name} <span className="font-normal opacity-80 text-[10px]">{hs.isPrincipal && "主"}</span></span>
-                      <span>{hs.tenGod}</span>
+                      <span className="font-serif font-black">{hs.name} <span className="font-bold opacity-80 text-[10px]">{hs.isPrincipal && "主"}</span></span>
+                      <span className="font-semibold">{hs.tenGod}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Self Sitting (自坐) */}
-                <div className="py-2.5 bg-[#fcfaf2]/40 text-left px-2 sm:px-3 border-b border-dashed border-amber-900/10 text-[10px] sm:text-xs text-amber-900 space-y-1">
+                <div className="py-3 bg-[#fcfaf2]/40 text-left px-2 sm:px-3 border-b border-dashed border-amber-900/10 text-xs text-amber-900 space-y-1.5 font-sans font-medium">
                   <div>
-                    <span className="opacity-60 block leading-tight">自坐星运</span>
-                    <span className="font-bold text-amber-950 font-serif">{col.pillar.selfSitting.changsheng}</span>
+                    <span className="text-[11px] font-bold text-amber-900/60 block leading-tight">自坐星运</span>
+                    <span className="font-black text-amber-950 font-serif leading-none mt-0.5 block">{col.pillar.selfSitting.changsheng}</span>
                   </div>
                   {!isDayMaster && (
                     <div>
-                      <span className="opacity-60 block leading-tight">自坐本气</span>
-                      <span className="font-bold text-amber-950 font-serif">{col.pillar.selfSitting.tenGod}</span>
+                      <span className="text-[11px] font-bold text-amber-900/60 block leading-tight">自坐本气</span>
+                      <span className="font-black text-amber-950 font-serif leading-none mt-0.5 block">{col.pillar.selfSitting.tenGod}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Nayin (纳音) */}
-                <div className="py-2.5 bg-amber-50/10 border-b border-dashed border-amber-900/10 text-[10px] sm:text-xs font-serif font-bold text-amber-950">
-                  <span className="text-[10px] font-sans font-normal text-amber-900/40 block leading-none mb-1">纳音</span>
+                <div className="py-3 bg-[#fcfaf2]/20 border-b border-dashed border-amber-900/10 text-xs sm:text-sm font-serif font-black text-amber-950">
+                  <span className="text-[11px] font-sans font-bold text-amber-900/60 block leading-none mb-1">纳音</span>
                   {col.pillar.nayin}
                 </div>
 
                 {/* Empty Void (空亡) */}
-                <div className="py-2.5 bg-white text-[10px] sm:text-xs text-amber-800 font-bold border-b border-dashed border-amber-900/10">
-                  <span className="text-[10px] font-sans font-normal text-amber-900/40 block leading-none mb-1">旬空</span>
+                <div className="py-3 bg-white text-xs sm:text-sm text-amber-800 font-extrabold border-b border-dashed border-amber-900/10">
+                  <span className="text-[11px] font-sans font-bold text-amber-900/60 block leading-none mb-1">旬空</span>
                   {col.pillar.emptyVoid.length > 0 ? (
-                    <span className="bg-red-50 text-red-800 px-1 py-0.5 rounded font-mono font-bold">
+                    <span className="bg-red-50 text-red-800 px-1.5 py-0.5 rounded font-mono font-black border border-red-200">
                       {col.pillar.emptyVoid.join(", ")}
                     </span>
                   ) : (
@@ -163,20 +163,20 @@ export default function BaziPillarsCard({ baziResult }: BaziPillarsCardProps) {
                 </div>
 
                 {/* Shensha (神煞) */}
-                <div className="p-2 sm:p-3 bg-[#fcfaf2]/20 flex-1 flex flex-col justify-start gap-1 min-h-[140px]">
-                  <span className="text-[10px] font-sans font-normal text-amber-900/40 text-center block mb-1">神煞印记</span>
+                <div className="p-2 sm:p-3 bg-[#fcfaf2]/20 flex-1 flex flex-col justify-start gap-1.5 min-h-[150px]">
+                  <span className="text-[11px] font-sans font-bold text-amber-900/60 text-center block mb-1">神煞印记</span>
                   {col.pillar.shensha.length > 0 ? (
                     col.pillar.shensha.map((s, sidx) => (
                       <span
                         key={sidx}
-                        className="text-[10px] text-amber-900 bg-amber-50/70 border border-amber-900/10 py-1 px-1.5 rounded-md text-center block leading-tight font-serif truncate"
+                        className="text-xs text-amber-950 bg-amber-100/50 border border-amber-900/10 py-1.5 px-2 rounded-md text-center block leading-tight font-serif font-bold truncate"
                         title={s}
                       >
                         {s}
                       </span>
                     ))
                   ) : (
-                    <span className="text-[10px] text-amber-900/30 text-center block mt-2 font-mono italic">平和</span>
+                    <span className="text-xs text-amber-900/30 text-center block mt-2 font-mono italic">平和</span>
                   )}
                 </div>
               </div>

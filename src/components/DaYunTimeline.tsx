@@ -12,22 +12,22 @@ export default function DaYunTimeline({ baziResult }: DaYunTimelineProps) {
       {/* Da Yun Header / Information block */}
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-amber-900/10 pb-4 gap-4">
         <div>
-          <h3 className="text-lg font-serif font-bold text-amber-950 flex items-center gap-2">
+          <h3 className="text-lg md:text-xl font-serif font-black text-amber-950 flex items-center gap-2">
             <span>◇</span> 大运起程气数历程
           </h3>
-          <p className="text-xs text-amber-900/50 mt-1 font-sans">
+          <p className="text-xs md:text-sm text-amber-900/60 mt-1 font-semibold font-sans">
             "一命运双行"：大运主管十年吉凶祸福势位
           </p>
         </div>
 
-        <div className="bg-amber-50 border border-amber-300/30 rounded-xl px-5 py-3 text-sm text-amber-950 flex items-center gap-4">
-          <div className="border-r border-amber-900/10 pr-4">
-            <span className="text-[10px] uppercase font-sans tracking-wide text-amber-900/50 block">起运时间</span>
-            <span className="font-extrabold text-[#b22222] text-base">{daYun.transitAgeDescription}</span>
+        <div className="bg-amber-50 border border-amber-300/35 rounded-xl px-5 py-3 text-sm text-amber-950 flex items-center gap-4">
+          <div className="border-r border-amber-900/15 pr-4">
+            <span className="text-xs uppercase font-sans tracking-wide text-amber-900/60 block font-bold">起运时间</span>
+            <span className="font-extrabold text-[#b22222] text-base md:text-lg">{daYun.transitAgeDescription}</span>
           </div>
           <div>
-            <span className="text-[10px] uppercase font-sans tracking-wide text-amber-900/50 block">精确公历交运</span>
-            <span className="font-bold text-amber-950 font-mono">{daYun.transitExactDate}</span>
+            <span className="text-xs uppercase font-sans tracking-wide text-amber-900/60 block font-bold">精确公历交运</span>
+            <span className="font-black text-amber-950 font-mono text-xs md:text-sm">{daYun.transitExactDate}</span>
           </div>
         </div>
       </div>
@@ -37,44 +37,44 @@ export default function DaYunTimeline({ baziResult }: DaYunTimelineProps) {
         {daYun.cycles.map((item) => (
           <div
             key={item.index}
-            className="bg-[#fcfaf2]/30 border border-amber-900/10 rounded-xl p-3 text-center space-y-2.5 hover:border-[#b22222]/30 hover:bg-[#fcfaf2]/60 hover:shadow-md transition-all group"
+            className="bg-[#fcfaf2]/30 border border-amber-900/15 rounded-xl p-3.5 text-center space-y-3 hover:border-[#b22222]/30 hover:bg-[#fcfaf2]/60 hover:shadow-md transition-all group"
           >
             {/* Number of Da Yun */}
-            <div className="text-[10px] text-amber-900/40 uppercase font-sans tracking-tight">
+            <div className="text-xs text-amber-900/60 uppercase font-sans tracking-tight font-extrabold">
               第 {item.index} 步大运
             </div>
 
             {/* Pillar Name */}
-            <div className="space-y-0.5">
-              <div className="text-2xl font-black font-serif text-amber-950 group-hover:text-[#b22222] transition-colors">
+            <div className="space-y-1">
+              <div className="text-2xl md:text-3xl font-black font-serif text-amber-950 group-hover:text-[#b22222] transition-colors">
                 {item.stem}{item.branch}
               </div>
-              <div className="text-[10px] text-amber-900 bg-white/75 border border-amber-900/5 rounded-full inline-block px-2 py-0.5 font-bold scale-90">
+              <div className="text-xs text-amber-900 bg-white border border-amber-900/10 rounded-full inline-block px-2.5 py-0.5 font-bold shadow-2xs">
                 {item.tenGod}
               </div>
             </div>
 
-            <div className="border-t border-dashed border-amber-900/5 pt-2 text-[10px] md:text-sm font-sans space-y-1">
+            <div className="border-t border-dashed border-amber-900/10 pt-2 text-xs md:text-sm font-sans space-y-1.5">
               {/* Ages */}
               <div>
-                <span className="text-[9px] text-amber-900/40 block leading-tight">起运岁数</span>
-                <span className="font-extrabold text-[#b22222] font-mono">{item.startAge} 岁</span>
+                <span className="text-[10.5px] font-bold text-amber-900/60 block leading-tight">起运岁数</span>
+                <span className="font-black text-[#b22222] font-mono block text-xs md:text-sm mt-0.5">{item.startAge} 岁</span>
               </div>
               
               {/* Year */}
               <div>
-                <span className="text-[9px] text-amber-900/40 block leading-tight">起运西元</span>
-                <span className="font-bold text-amber-950/80 font-mono">{item.startYear} 年</span>
+                <span className="text-[10.5px] font-bold text-amber-900/60 block leading-tight">起运西元</span>
+                <span className="font-black text-amber-950/90 font-mono block text-xs md:text-sm mt-0.5">{item.startYear} 年</span>
               </div>
 
               {/* Star Fortune (十二长生) */}
-              <div className="border-t border-amber-900/5 pt-1.5 mt-1.5 space-y-0.5">
-                <span className="text-[9px] text-amber-900/40 block leading-none">星运</span>
-                <span className="text-amber-900 font-serif font-extrabold text-[11px] block">{item.changsheng}</span>
+              <div className="border-t border-amber-900/10 pt-2 mt-2 space-y-0.5">
+                <span className="text-[10.5px] font-bold text-amber-900/60 block leading-none">星运</span>
+                <span className="text-[#b22222] font-serif font-black text-xs md:text-sm block mt-0.5">{item.changsheng}</span>
               </div>
 
               {/* Nayin (纳音) */}
-              <div className="text-[9px] text-amber-900/50 font-serif truncate" title={item.nayin}>
+              <div className="text-xs text-amber-900/70 font-serif truncate font-bold pt-1.5" title={item.nayin}>
                 {item.nayin}
               </div>
             </div>

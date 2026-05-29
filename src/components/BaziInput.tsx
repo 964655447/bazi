@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FolderHeart, Trash2, BookmarkPlus } from "lucide-react";
 
 interface BaziInputProps {
@@ -8,7 +8,9 @@ interface BaziInputProps {
     longitude: number;
     cityName: string;
     gender: "男" | "女";
+    system: "bazi" | "ziwei";
   }) => void;
+  initialSystem?: "bazi" | "ziwei";
 }
 
 interface SavedRecord {
@@ -44,9 +46,8 @@ const PRESET_CITIES = [
   { name: "香港", lng: 114.2 }
 ];
 
-export default function BaziInput({ onCalculate }: BaziInputProps) {
+export default function BaziInput({ onCalculate, initialSystem = "bazi" }: BaziInputProps) {
   const [name, setName] = useState("");
-  // Default to a typical date-time, say 1995-10-18 08:30
   const [date, setDate] = useState("1995-10-18");
   const [time, setTime] = useState("08:30");
   const [gender, setGender] = useState<"男" | "女">("男");
@@ -54,6 +55,7 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
   const [customLng, setCustomLng] = useState<number>(116.4);
   const [isCustomLng, setIsCustomLng] = useState(false);
   const [customCityName, setCustomCityName] = useState("");
+  const [selectedSystem, setSelectedSystem] = useState<"bazi" | "ziwei">(initialSystem);
 
   // Load saved records
   const [savedRecords, setSavedRecords] = useState<SavedRecord[]>(() => {
@@ -78,7 +80,8 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
       birthTime: `${date} ${time}`,
       longitude: finalLng,
       cityName: finalCityName,
-      gender
+      gender,
+      system: selectedSystem
     });
   };
 
@@ -100,7 +103,6 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
     const finalLng = isCustomLng ? customLng : PRESET_CITIES[selectedCityIdx].lng;
     const recordName = name.trim() || `缘主 (${date})`;
     
-    // Check if we already have a record with same details to overwrite, or just create a new one
     const newRecord: SavedRecord = {
       id: Date.now().toString(),
       name: recordName,
@@ -125,7 +127,6 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
     setTime(record.time);
     setGender(record.gender);
     
-    // Find city index or custom setup
     const presetIdx = PRESET_CITIES.findIndex(c => c.name === record.cityName && Math.abs(c.lng - record.lng) < 0.1);
     if (presetIdx !== -1 && !record.isCustomLng) {
       setSelectedCityIdx(presetIdx);
@@ -140,7 +141,7 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
 
   // Delete a record from the library
   const handleDeleteRecord = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent loading when clicking delete
+    e.stopPropagation();
     const updated = savedRecords.filter(r => r.id !== id);
     setSavedRecords(updated);
     localStorage.setItem("bazi_library_records", JSON.stringify(updated));
@@ -149,20 +150,54 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
   return (
     <div id="bazi-input-panel" className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-[#e5e5d5] text-[#4a4a40]">
       <div className="flex items-center gap-3 mb-6 border-b border-[#e5e5d5] pb-4">
-        <div className="bg-[#5a5a40] text-[#f5f5f0] px-3 py-1.5 rounded-full font-bold text-sm">庚</div>
+        <div className="bg-[#5a5a40] text-[#f5f5f0] px-3 py-1.5 rounded-full font-bold text-sm select-none">庚</div>
         <div>
-          <h2 className="text-xl font-bold text-[#5a5a40] font-sans tracking-tight">先天命符输入</h2>
-          <p className="text-xs text-[#8a8a70] mt-0.5">请录入生辰信息以精准测算个人先天八字排盘命脉</p>
+          <h2 className="text-xl font-bold text-[#5a5a40] font-sans tracking-tight">星命乾坤排盘阁</h2>
+          <p className="text-xs text-[#8a8a70] mt-0.5">请录入生辰信息，并选择八字本源或紫微主曜法门进行测算</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Choice of System */}
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold text-[#4a4a40]">选择推演本源（排盘系统）</label>
+          <div className="grid grid-cols-2 gap-3" id="system-choice-group">
+            <button
+              type="button"
+              id="sys-bazi-btn"
+              onClick={() => setSelectedSystem("bazi")}
+              className={`py-3.5 px-4 rounded-xl font-serif text-sm transition-all cursor-pointer flex flex-col items-center justify-center border text-center ${
+                selectedSystem === "bazi"
+                  ? "bg-[#5a5a40]/10 text-[#5a5a40] border-[#5a5a40] font-bold shadow-sm"
+                  : "bg-[#ebebe0]/40 text-[#8a8a70] border-[#dcdcc8] hover:bg-[#ebebe0]"
+              }`}
+            >
+              <span className="text-sm md:text-base font-bold flex items-center gap-1">🌌 八字排盘</span>
+              <span className="text-[10px] mt-0.5 opacity-80 leading-tight">五行理气 · 十神大运</span>
+            </button>
+            <button
+              type="button"
+              id="sys-ziwei-btn"
+              onClick={() => setSelectedSystem("ziwei")}
+              className={`py-3.5 px-4 rounded-xl font-serif text-sm transition-all cursor-pointer flex flex-col items-center justify-center border text-center ${
+                selectedSystem === "ziwei"
+                  ? "bg-[#5a5a40]/10 text-[#5a5a40] border-[#5a5a40] font-bold shadow-sm"
+                  : "bg-[#ebebe0]/40 text-[#8a8a70] border-[#dcdcc8] hover:bg-[#ebebe0]"
+              }`}
+            >
+              <span className="text-sm md:text-base font-bold flex items-center gap-1">💫 紫微大盘</span>
+              <span className="text-[10px] mt-0.5 opacity-80 leading-tight">十二神宫 · 飞星四化</span>
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Name Input */}
           <div>
             <label className="block text-sm font-semibold text-[#4a4a40] mb-2">缘主姓名</label>
             <input
               type="text"
+              id="user-name-input"
               placeholder="请输入姓名（如：张三，选填）"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -173,9 +208,10 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
           {/* Gender Select */}
           <div>
             <label className="block text-sm font-semibold text-[#4a4a40] mb-2">性别（乾坤阴阳）</label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3" id="gender-choice-group">
               <button
                 type="button"
+                id="gender-male-btn"
                 onClick={() => setGender("男")}
                 className={`py-3 rounded-full font-medium border text-sm transition-all cursor-pointer ${
                   gender === "男"
@@ -187,6 +223,7 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
               </button>
               <button
                 type="button"
+                id="gender-female-btn"
                 onClick={() => setGender("女")}
                 className={`py-3 rounded-full font-medium border text-sm transition-all cursor-pointer ${
                   gender === "女"
@@ -206,6 +243,7 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
             <label className="block text-sm font-semibold text-[#4a4a40] mb-2">出生公历日期</label>
             <input
               type="date"
+              id="birth-date-picker"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
@@ -218,6 +256,7 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
             <label className="block text-sm font-semibold text-[#4a4a40] mb-2">出生时间（北京时间）</label>
             <input
               type="time"
+              id="birth-time-picker"
               value={time}
               onChange={(e) => setTime(e.target.value)}
               required
@@ -230,6 +269,7 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
         <div>
           <label className="block text-sm font-semibold text-[#4a4a40] mb-2">出生省市地点(计算太阳时)</label>
           <select
+            id="preset-city-select"
             value={isCustomLng ? "custom" : selectedCityIdx}
             onChange={handleCityChange}
             className="w-full bg-[#f5f5f0]/50 border border-[#dcdcc8] focus:border-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40] rounded-xl px-4 py-3 text-[#4a4a40] cursor-pointer"
@@ -246,16 +286,17 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
         {/* Custom Longitude coordinates fine-tuning */}
         <div className="p-4 bg-[#ebebe0]/40 border border-[#e5e5d5] rounded-xl space-y-4">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-[#8a8a70] uppercase font-sans tracking-wider">真太阳时经度校验</span>
+            <span className="text-xs font-bold text-[#8a8a70] uppercase font-sans tracking-wider font-semibold">真太阳时经度校验</span>
             <span className="text-sm font-extrabold text-[#5a5a40] font-mono bg-white px-2.5 py-1 rounded border border-[#dcdcc8]">
               东经 {customLng.toFixed(2)} 度
             </span>
           </div>
 
           {isCustomLng && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2" id="custom-city-inputs">
               <input
                 type="text"
+                id="custom-city-name-input"
                 placeholder="城市名称 (例如：洛阳)"
                 value={customCityName}
                 onChange={(e) => setCustomCityName(e.target.value)}
@@ -267,6 +308,7 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
 
           <input
             type="range"
+            id="longitude-range-slider"
             min="70"
             max="135"
             step="0.01"
@@ -291,13 +333,15 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
         <div className="flex gap-3">
           <button
             type="submit"
+            id="calculate-submit-btn"
             className="flex-[2] bg-[#5a5a40] hover:bg-[#4a4a40] text-[#f5f5f0] font-bold py-4 rounded-full shadow hover:shadow-md transition-all cursor-pointer text-center text-sm md:text-lg tracking-widest font-serif"
           >
-            ☯️ 开启生辰排盘
+            {selectedSystem === "ziwei" ? "☯️ 开启紫微大盘" : "☯️ 开启八字排盘"}
           </button>
           
           <button
             type="button"
+            id="save-library-btn"
             onClick={handleSaveToLibrary}
             className="flex-1 bg-[#ebebe0]/80 hover:bg-[#ebebe0] text-[#5a5a40] border border-[#dcdcc8] font-bold py-4 rounded-full shadow-sm transition-all cursor-pointer text-xs md:text-sm text-center flex items-center justify-center gap-1.5"
             title="将当前信息保存至本地，下次可快速载入"
@@ -309,7 +353,7 @@ export default function BaziInput({ onCalculate }: BaziInputProps) {
 
         {/* 📜 古籍命理库 (Local Storage Library) */}
         {savedRecords.length > 0 && (
-          <div className="mt-8 pt-6 border-t border-dashed border-[#dcdcc8]">
+          <div className="mt-8 pt-6 border-t border-dashed border-[#dcdcc8]" id="saved-records-panel">
             <div className="flex items-center gap-2 mb-3">
               <FolderHeart className="w-4 h-4 text-[#5a5a40]" />
               <h3 className="text-sm font-bold text-[#5a5a40] font-serif">📜 先天阁内珍藏命谱</h3>

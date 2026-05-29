@@ -35,12 +35,12 @@ async function startServer() {
   // AI Bazi Reading Route
   app.post("/api/bazi-analyze", async (req, res) => {
     try {
-      const { baziData, apiConfig } = req.body;
+      const { baziData, apiConfig, customPrompt } = req.body;
       if (!baziData) {
         return res.status(400).json({ error: "No Bazi data provided" });
       }
 
-      const prompt = `
+      const prompt = customPrompt || `
 你是一位精通中国传统命理学（八字神煞、大运流年、格局强弱）的专业命理学大师。请基于以下排盘数据，为缘主提供全面、温和、客观的深度命理分析报告：
 
 【基本信息】
@@ -103,7 +103,7 @@ async function startServer() {
       // User supplied API configuration
       let { apiKey, baseUrl, model } = apiConfig;
       if (!apiKey || apiKey.trim() === "") {
-        return res.status(400).json({ error: `您已选用 [${provider}] 作为服务商，但未填入相应的 API 密钥 (API Key)。` });
+        return res.status(400).json({ error: `您已选用 ${provider} 作为服务商，但未填入相应的 API 密钥。` });
       }
 
       // Default presets if empty
