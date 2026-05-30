@@ -94,7 +94,7 @@ async function startServer() {
         }
         const client = getGeminiClient();
         const response = await client.models.generateContent({
-          model: "gemini-2.0-flash",
+          model: "gemini-3.5-flash",
           contents: prompt
         });
         return res.json({ analysis: response.text });
@@ -112,7 +112,7 @@ async function startServer() {
         model = model || "deepseek-chat";
       } else if (provider === "gemini") {
         baseUrl = baseUrl || "https://generativelanguage.googleapis.com";
-        model = model || "gemini-2.0-flash";
+        model = model || "gemini-3.5-flash";
       } else if (provider === "openai") {
         baseUrl = baseUrl || "https://api.openai.com/v1";
         model = model || "gpt-4o-mini";
@@ -126,7 +126,7 @@ async function startServer() {
       if (provider === "gemini" && (!baseUrl || baseUrl.includes("googleapis.com"))) {
         const client = new GoogleGenAI({ apiKey });
         const response = await client.models.generateContent({
-          model: model || "gemini-2.0-flash",
+          model: model || "gemini-3.5-flash",
           contents: prompt
         });
         return res.json({ analysis: response.text });

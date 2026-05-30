@@ -4,6 +4,29 @@ import { BaziChartResult, ApiConfig } from "../types";
 import { Sparkles, Loader2, Copy, Check, FileText, Settings } from "lucide-react";
 import { compileZiwei } from "../utils/ziwei";
 
+const SIHUA_TABLE: { [key: string]: { lu: string; quan: string; ke: string; ji: string } } = {
+  "甲": { lu: "廉贞", quan: "破军", ke: "武曲", ji: "太阳" },
+  "乙": { lu: "天机", quan: "天梁", ke: "紫微", ji: "太阴" },
+  "丙": { lu: "天同", quan: "天机", ke: "文昌", ji: "廉贞" },
+  "丁": { lu: "太阴", quan: "天同", ke: "天机", ji: "巨门" },
+  "戊": { lu: "贪狼", quan: "太阴", ke: "右弼", ji: "天机" },
+  "己": { lu: "武曲", quan: "贪狼", ke: "天梁", ji: "文曲" },
+  "庚": { lu: "太阳", quan: "武曲", ke: "太阴", ji: "天同" },
+  "辛": { lu: "巨门", quan: "太阳", ke: "文曲", ji: "文昌" },
+  "壬": { lu: "天梁", quan: "紫微", ke: "左辅", ji: "武曲" },
+  "癸": { lu: "破军", quan: "巨门", ke: "太阴", ji: "贪狼" }
+};
+
+const getMutagen = (starName: string, yearGan: string): string | undefined => {
+  const sihua = SIHUA_TABLE[yearGan];
+  if (!sihua) return undefined;
+  if (sihua.lu === starName) return "化禄";
+  if (sihua.quan === starName) return "化权";
+  if (sihua.ke === starName) return "化科";
+  if (sihua.ji === starName) return "化忌";
+  return undefined;
+};
+
 interface AiAnalysisCardProps {
   baziResult: BaziChartResult;
   apiConfig: ApiConfig;
@@ -64,46 +87,174 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
     const compileZiweiText = () => {
       try {
         const zw = compileZiwei(baziResult.birthTimeG, baziResult.longitude, baziResult.cityName, baziResult.gender, name || "缘主");
-        let txt = `【紫微斗数命盘参佐（星度）】\n- 农历出生时间：${zw.birthTimeL}\n- 命宫局数：${zw.mingJu}\n- 命主守护：${zw.mingZhu} / 身主守护：${zw.shenZhi}\n- 岁君乾坤：${zw.yearGanZhi}\n`;
-        txt += `- 命盘十二宫分布与坐守星曜：\n`;
-        zw.palaces.forEach(p => {
-          const sihuaStr = Object.entries(p.sihua).map(([st, sh]) => `${st}·${sh}`).join(", ");
-          txt += `  * ${p.palaceName}在 [${p.stemName}${p.branchName}] 宫 (大限: ${p.decadalStart}-${p.decadalEnd}岁), 主星: [${p.majorStars.join(", ") || "无主星"}], 吉星: [${p.luckyStars.join(", ") || "无"}], 煞宿: [${p.harmStars.join(", ") || "无"}]${sihuaStr ? `, 四化: [${sihuaStr}]` : ""}\n`;
+        
+        const fp = baziResult.fourPillars;
+        const yearGan = zw.yearGanZhi.charAt(0);
+        const yearZhi = zw.yearGanZhi.charAt(1);
+        
+        // Find Ming Gong and Shen Gong
+        const mingPalace = zw.palaces.find(p => p.isOriginalPalace);
+        const shenPalace = zw.palaces.find(p => p.isShenGong);
+        
+        const mingGongName = mingPalace ? mingPalace.branchName : "未知";
+        const shenGongName = shenPalace ? shenPalace.branchName : "未知";
+        
+        // Extract month index of lunar date
+        const monthMatch = zw.birthTimeL.match(/年\s*(.*?)月/);
+        const monthCn = monthMatch ? monthMatch[1].trim() : "一";
+        const CN_MONTHS: { [key: string]: number } = {
+          "正": 1, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, 
+          "七": 7, "八": 8, "九": 9, "十": 10, "十一": 11, "十二": 12, "腊": 12
+        };
+        const monthNum = CN_MONTHS[monthCn] || 1;
+        
+        // Hour index from Zi
+        const hourMatch = zw.birthTimeL.match(/月.*?\s+(.*?)时/);
+        const hourCn = hourMatch ? hourMatch[1].trim() : "子";
+        const CN_BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+        const hourIdx = CN_BRANCHES.indexOf(hourCn) !== -1 ? CN_BRANCHES.indexOf(hourCn) : 0;
+        
+        const douJunIdx = ((monthNum - 1 - hourIdx + 12) % 12);
+        const BOARD_BRANCHES = ["寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑"];
+        const douJunBranch = BOARD_BRANCHES[douJunIdx];
+        
+        // 身主 Mapping using Year Branch index in CN_BRANCHES
+        const yearBranchIdx = CN_BRANCHES.indexOf(yearZhi) !== -1 ? CN_BRANCHES.indexOf(yearZhi) : 0;
+        const SHEN_ZHU_MAP = ["天相", "天梁", "天同", "天机", "文昌", "火星", "天相", "天梁", "天同", "天机", "文昌", "火星"];
+        const shenZhu = SHEN_ZHU_MAP[yearBranchIdx % 12];
+        
+        let txt = `文墨天机紫微斗数命盘\n`;
+        txt += `│\n`;
+        txt += `├API 版本 : 1.1.2\n`;
+        txt += `├App版本 : 2.5.9\n`;
+        txt += `├安星码 : C5VUC\n`;
+        txt += `├符号定义\n`;
+        txt += `│ ├(↓:离心自化)\n`;
+        txt += `│ ├(↑:向心自化，从对宫化入)\n`;
+        txt += `│ ├(┏ : 生日前小限)\n`;
+        txt += `│ └( ┓: 生日后小限)\n`;
+        txt += `│\n`;
+        txt += `├基本信息\n`;
+        txt += `│ │\n`;
+        txt += `│ ├性别 : ${baziResult.gender}\n`;
+        txt += `│ ├地理经度 : ${baziResult.longitude || 116.4}\n`;
+        txt += `│ ├钟表时间 : ${baziResult.birthTimeG}\n`;
+        txt += `│ ├真太阳时 : ${baziResult.birthTimeLST || baziResult.birthTimeG}\n`;
+        txt += `│ ├农历时间 : ${zw.birthTimeL.replace("农历", "").trim()}\n`;
+        
+        const pillarsStr = `${fp.year.stem.name}${fp.year.branch.name} ${fp.month.stem.name}${fp.month.branch.name} ${fp.day.stem.name}${fp.day.branch.name} ${fp.hour.stem.name}${fp.hour.branch.name}`;
+        txt += `│ ├节气四柱 : ${pillarsStr}\n`;
+        txt += `│ ├非节气四柱 : ${pillarsStr}\n`;
+        txt += `│ ├五行局数 : ${zw.mingJu}\n`;
+        txt += `│ └身主:${shenZhu}; 命主:${zw.mingZhu}; 子年斗君:${douJunBranch}; 身宫:${shenGongName}\n`;
+        txt += `│\n`;
+        txt += `├命盘十二宫\n`;
+        txt += `│ │ \n`;
+        
+        // Loop over houses in standard branch order starting from 子 BoardIdx 10 to 亥 BoardIdx 9
+        const exportOrder = [10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        
+        exportOrder.forEach((pIdx, outerIdx) => {
+          const p = zw.palaces.find(x => x.branchIdx === pIdx);
+          if (!p) return;
+          
+          const isLastPalace = outerIdx === exportOrder.length - 1;
+          const prefixPalace = isLastPalace ? " └" : " ├";
+          const subPrefix = isLastPalace ? "  " : " │";
+          
+          let palaceHeader = `${p.palaceName}[${p.stemName}${p.branchName}]`;
+          if (p.isShenGong) {
+            palaceHeader += `[身宫]`;
+          }
+          
+          txt += `│ ${prefixPalace}${palaceHeader}\n`;
+          
+          const formatStars = (starsList: any[], includeBrightness = false) => {
+            if (starsList.length === 0) return "无";
+            return starsList.map(s => {
+              let sStr = s.name;
+              if (includeBrightness && s.brightness) {
+                sStr += `[${s.brightness}]`;
+              }
+              const m = getMutagen(s.name, yearGan);
+              if (m) {
+                const mapper: { [key: string]: string } = {
+                  "化禄": "生年禄",
+                  "化权": "生年权",
+                  "化科": "生年科",
+                  "化忌": "生年忌"
+                };
+                sStr += `[${mapper[m] || m}]`;
+              }
+              return sStr;
+            }).join(", ");
+          };
+          
+          const majorStarsStr = formatStars(p.majorStars, true);
+          const minorStarsStr = formatStars(p.minorStars, false);
+          const adjectiveStarsStr = formatStars(p.adjectiveStars, false);
+          
+          txt += `│ │ ${subPrefix}├主星 : ${majorStarsStr}\n`;
+          txt += `│ │ ${subPrefix}├辅星 : ${minorStarsStr}\n`;
+          txt += `│ │ ${subPrefix}├小星 : ${adjectiveStarsStr}\n`;
+          
+          // 神煞
+          txt += `│ │ ${subPrefix}├神煞\n`;
+          txt += `│ │ ${subPrefix}│ ├岁前星 : ${p.suiqian12}\n`;
+          txt += `│ │ ${subPrefix}│ ├将前星 : ${p.jiangqian12}\n`;
+          txt += `│ │ ${subPrefix}│ ├十二长生 : ${p.changsheng12}\n`;
+          txt += `│ │ ${subPrefix}│ └太岁煞禄 : ${p.boshi12}\n`;
+          
+          // 大限, 小限, 流年, 限流叠宫
+          txt += `│ │ ${subPrefix}├大限 : ${p.decadalStart} ~ ${p.decadalEnd}虚岁\n`;
+          
+          // Compute minor limits
+          let startLimitIdx = 0;
+          if ([2, 6, 10].includes(yearBranchIdx)) startLimitIdx = 2;
+          else if ([8, 0, 4].includes(yearBranchIdx)) startLimitIdx = 8;
+          else if ([5, 9, 1].includes(yearBranchIdx)) startLimitIdx = 5;
+          else if ([11, 3, 7].includes(yearBranchIdx)) startLimitIdx = 11;
+          
+          const stepDir = baziResult.gender === "男" ? 1 : -1;
+          const palaceAges: number[] = [];
+          for (let age = 1; age <= 120; age++) {
+            const currentIdx = ((startLimitIdx + (age - 1) * stepDir) % 12 + 12) % 12;
+            if (currentIdx === pIdx) {
+              palaceAges.push(age);
+            }
+          }
+          const smallLimitsStr = palaceAges.slice(0, 5).join(",") + "虚岁";
+          
+          // Compute flowing years
+          const birthYearBoardIdx = BOARD_BRANCHES.indexOf(CN_BRANCHES[yearBranchIdx]);
+          const flowingAges: number[] = [];
+          for (let age = 1; age <= 120; age++) {
+            const currentFlowIdx = ((birthYearBoardIdx + (age - 1)) % 12 + 12) % 12;
+            if (currentFlowIdx === pIdx) {
+              flowingAges.push(age);
+            }
+          }
+          const flowingYearsStr = flowingAges.slice(0, 5).join(",") + "虚岁";
+          
+          txt += `│ │ ${subPrefix}├小限 : ${smallLimitsStr}\n`;
+          txt += `│ │ ${subPrefix}├流年 : ${flowingYearsStr}\n`;
+          txt += `│ │ ${subPrefix}└限流叠宫 : 无\n`;
+          if (!isLastPalace) {
+            txt += `│\n`;
+          }
         });
+        
         return txt;
       } catch (e) {
+        console.error(e);
         return "";
       }
     };
 
     if (mode === "ziwei") {
-      return `你是一位精通中国传统命理学（紫微斗数、星曜格局、十二宫位、飞星四化、大小限流年）的紫微斗数命理学大宗师。
-请基于以下排盘数据（紫微斗数十二宫与星曜守护组合），为缘主提供一份全面、精准、文雅、开阔的独立紫微斗数命理深度批注分析报告：
+      return `你现在是资深的国学易经术数领域专家，请详细分析下面这个文墨天机紫微斗数命盘，综合使用三合紫微、飞星紫微、河洛紫微、钦天四化等各流派紫微斗数的分析技法，对命盘十二宫星曜分布、限流叠宫和各宫位间的飞宫四化进行细致分析，进而对命主的健康、学业、事业、财运、人际关系、婚姻和感情等各个方面进行全面分析和总结，关键事件须给出发生时间范围、吉凶属性、事件对命主的影响程度等信息，并结合命主的自身特点给出针对性的解决方案和建议。另外，命盘信息里附带了十二个大限共一百二十个流年的信息，请对前八个大限的所有流年进行分析，给出每一年需要关注的重大事件和注意事项。最后，别忘了提醒用户上述分析仅限于研究或娱乐目的使用。
 
-【基本信息】
-- 缘主姓名：${name || "未填写（请以'缘主'称呼）"}
-- 性别：${baziResult.gender}
-- 公历生日：${baziResult.birthTimeG}
-- 真太阳时：${baziResult.birthTimeLST || baziResult.birthTimeG} (出生地经度: ${baziResult.longitude || 116.4}°E, 城市: ${baziResult.cityName || "北京"})
-
-${compileZiweiText()}
-
-请务必按照以下严谨、温馨、开明大气的模块输出一份结构精美的 Markdown 报告，不要乱造，结合星宿印记（相辅相成，融会贯通），语言要富有国学精雅、哲学宽阔、科学理性的气派：
-
-1. 🌌 **命宫本源与自我身心（格局与主曜）**：
-   - 着重解读【命宫】与【身宫】的主星曜（如其吉凶坐守、三方四正的加持、辅星煞宿的掺杂）。
-   - 解析命宿乾坤五行局（如水二局、火六局）带来的禀赋，分析整体星盘的气象（如是否构成量级格局，如极向离明、紫府同宫等，或者属于寻常安稳盘）。
-2. 💫 **六亲缘分与情感交织（夫妻、父母、子女、交友宫）**：
-   - 提取夫妻宫、父母宫、子女宫等坐守，解析命主与父母长辈、配偶伴侣、下一代子嗣以及外界朋友的宿缘与沟通建议。
-3. 💼 **财帛官禄、实业田宅之宏谋**：
-   - 结合【财帛宫】、【官禄宫】、【田宅宫】坐守，分析天赋职业长项、求财机缘、固定产业吉凶及事业成就高低的升降节律。
-4. 🩺 **疾厄体格与情志养护**：
-   - 解读【疾厄宫】星曜及对宫守护，对身体体质强弱、易损器官及心理情绪情志的平衡调适，给予大宗师的善意调心之语。
-5. 🗺️ **大限流转与当下安神提示**：
-   - 解读当期大限（十年来路）及当前流年（${baziResult.flowingTime?.year || "无"}）星运流转变化、双禄或飞星四化的互动关系。
-   - 为缘主当下的精神状态、求职、投资或生活抉择，提供极具哲学启发性的安神及修德寄语。
-
-请用古典宽厚、优雅亲切、理智客观的修心语气撰写，排版极为精美，善用 Markdown 分割线、表格和富有国学美感的区块（💡）。`;
+${compileZiweiText()}`;
     }
 
     // Default or Bazi Mode

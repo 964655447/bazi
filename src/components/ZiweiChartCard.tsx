@@ -28,6 +28,57 @@ const PALACE_CENTERS = [
 
 const BOARD_BRANCHES = ["寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑"];
 
+const getBoshiStarColor = (starName: string): string => {
+  switch (starName) {
+    case "博士": return "text-indigo-800 bg-indigo-50 border border-indigo-200/50";
+    case "力士": return "text-amber-800 bg-amber-50 border border-amber-200/50";
+    case "青龙": return "text-emerald-700 bg-emerald-50 border border-emerald-200/50";
+    case "小耗": return "text-orange-700 bg-orange-50 border border-orange-200/40";
+    case "将军": return "text-red-700 bg-red-50 border border-red-200/50";
+    case "奏书": return "text-fuchsia-800 bg-fuchsia-50 border border-fuchsia-200/40";
+    case "飞廉": return "text-cyan-800 bg-cyan-50 border border-cyan-200/40";
+    case "喜神": return "text-pink-700 bg-pink-50 border border-pink-200/40";
+    case "病符": return "text-stone-600 bg-stone-100 border border-stone-200/40";
+    case "大耗": return "text-rose-800 bg-rose-50 border border-rose-200/50";
+    case "伏兵": return "text-slate-600 bg-slate-50 border border-slate-200/40";
+    case "官府": return "text-violet-800 bg-violet-50 border border-violet-200/50";
+    default: return "text-stone-750 bg-stone-50 border border-stone-200";
+  }
+};
+
+const getJiangqianStarColor = (starName: string): string => {
+  switch (starName) {
+    case "将星": return "text-rose-700 bg-rose-50 border border-rose-200/50 font-serif";
+    case "攀鞍": return "text-amber-700 bg-amber-50 border border-amber-200/40 font-serif";
+    case "岁驿": return "text-emerald-700 bg-emerald-50 border border-emerald-200/40 font-serif";
+    case "息神": return "text-slate-600 bg-slate-100 border border-slate-200/30 font-serif";
+    case "华盖": return "text-indigo-700 bg-indigo-50 border border-indigo-200/40 font-serif";
+    case "劫煞": case "灾煞": case "天煞": return "text-red-700 bg-red-50 border border-red-200/40 font-serif";
+    case "指背": return "text-orange-700 bg-orange-50 border border-orange-200/30 font-serif";
+    case "咸池": return "text-pink-600 bg-pink-50 border border-pink-200/35 font-serif";
+    case "月煞": return "text-violet-700 bg-violet-50 border border-violet-200/30 font-serif";
+    case "亡神": return "text-teal-700 bg-teal-50 border border-teal-200/30 font-serif";
+    default: return "text-blue-700 bg-blue-50 border border-blue-200/30 font-serif";
+  }
+};
+
+const getSuiqianStarColor = (starName: string): string => {
+  switch (starName) {
+    case "岁建": return "text-red-700 bg-red-50 border border-red-200/50 font-serif";
+    case "晦气": return "text-indigo-800 bg-indigo-50 border border-indigo-200/30 font-serif";
+    case "丧门": case "贯索": return "text-slate-600 bg-slate-100 border border-slate-200/30 font-serif";
+    case "官府": return "text-violet-700 bg-violet-50 border border-violet-200/40 font-serif";
+    case "小耗": return "text-orange-750 bg-orange-50 border border-orange-200/30 font-serif";
+    case "大耗": case "岁破": return "text-rose-850 bg-rose-50 border border-rose-200/50 font-serif";
+    case "龙德": return "text-emerald-700 bg-emerald-50 border border-emerald-200/40 font-serif";
+    case "白虎": return "text-amber-800 bg-amber-50 border border-amber-200/45 font-serif";
+    case "天德": return "text-amber-600 bg-amber-50 border border-amber-200/35 font-serif";
+    case "吊客": return "text-fuchsia-700 bg-fuchsia-50 border border-fuchsia-200/45 font-serif";
+    case "病符": return "text-teal-700 bg-teal-50 border border-teal-200/40 font-serif";
+    default: return "text-rose-700 bg-rose-50 border border-rose-200/35 font-serif";
+  }
+};
+
 // Stable traditional brightness (庙旺平陷) rules
 const getMiaoWang = (star: string, branchName: string): string => {
   if (star === "紫微") {
@@ -120,6 +171,29 @@ const getBranchElement = (branch: string) => {
   return "水";
 };
 
+const SIHUA_TABLE: { [key: string]: { lu: string; quan: string; ke: string; ji: string } } = {
+  "甲": { lu: "廉贞", quan: "破军", ke: "武曲", ji: "太阳" },
+  "乙": { lu: "天机", quan: "天梁", ke: "紫微", ji: "太阴" },
+  "丙": { lu: "天同", quan: "天机", ke: "文昌", ji: "廉贞" },
+  "丁": { lu: "太阴", quan: "天同", ke: "天机", ji: "巨门" },
+  "戊": { lu: "贪狼", quan: "太阴", ke: "右弼", ji: "天机" },
+  "己": { lu: "武曲", quan: "贪狼", ke: "天梁", ji: "文曲" },
+  "庚": { lu: "太阳", quan: "武曲", ke: "太阴", ji: "天同" },
+  "辛": { lu: "巨门", quan: "太阳", ke: "文曲", ji: "文昌" },
+  "壬": { lu: "天梁", quan: "紫微", ke: "左辅", ji: "武曲" },
+  "癸": { lu: "破军", quan: "巨门", ke: "太阴", ji: "贪狼" }
+};
+
+const getMutagen = (starName: string, yearGan: string): string | undefined => {
+  const sihua = SIHUA_TABLE[yearGan];
+  if (!sihua) return undefined;
+  if (sihua.lu === starName) return "化禄";
+  if (sihua.quan === starName) return "化权";
+  if (sihua.ke === starName) return "化科";
+  if (sihua.ji === starName) return "化忌";
+  return undefined;
+};
+
 // Stable helper to convert Stem-Branch year of flowingTime into absolute calendar year based on birthYear
 const getYearFromStemBranch = (gz: string, birthYear: number): number => {
   const stems = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
@@ -153,6 +227,18 @@ export default function ZiweiChartCard({ baziResult, name }: ZiweiChartCardProps
   const mingBoardIdx = chartData.palaces.find((p) => p.isMingGong)?.branchIdx ?? 5;
   const birthBranch = chartData.yearGanZhi.slice(-1);
   const ybBoardIdx = BOARD_BRANCHES.indexOf(birthBranch) !== -1 ? BOARD_BRANCHES.indexOf(birthBranch) : 6;
+
+  // 小限1岁所在宫位（根据出生年支查表，iztro规则）
+  // BOARD_BRANCHES 索引: 0=寅,1=卯,2=辰,3=巳,4=午,5=未,6=申,7=酉,8=戌,9=亥,10=子,11=丑
+  const getAge1Index = (birthBranchIdx: number): number => {
+    // 寅午戌年 -> 辰宫(2); 申子辰年 -> 戌宫(8); 巳酉丑年 -> 未宫(5); 亥卯未年 -> 丑宫(11)
+    if ([0, 4, 8].includes(birthBranchIdx)) return 2; // 寅午戌
+    if ([6, 10, 2].includes(birthBranchIdx)) return 8; // 申子辰
+    if ([3, 7, 11].includes(birthBranchIdx)) return 5; // 巳酉丑
+    return 11; // 亥卯未
+  };
+
+  const age1Idx = getAge1Index(ybBoardIdx);
 
   // Safe read birthYear & currentTargetYear
   const birthYear = parseInt(baziResult.birthTimeG.split("-")[0]) || 1995;
@@ -300,10 +386,13 @@ export default function ZiweiChartCard({ baziResult, name }: ZiweiChartCardProps
       reading += " 疾厄宫主管体魄状况、先天经络强弱，以及由于五行气血偏旺导致的调养预警。";
     }
 
-    // Detail Sihua tags
-    const activeSihua = Object.entries(palace.sihua);
+    // Detail Sihua tags - get from major stars with mutagen
+    const activeSihua = palace.majorStars
+      .map(ms => ({ star: ms.name, mutagen: getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) }))
+      .filter(s => s.mutagen)
+      .map(s => `${s.star}${s.mutagen}`);
     if (activeSihua.length > 0) {
-      reading += ` 在生辰天机交界中，此宫引动四化星曜：${activeSihua.map(([star, sh]) => `${star}${sh}`).join("、")}，主因果枢纽倾斜、名禄纠葛、属于重中之重的气机变化点。`;
+      reading += ` 在生辰天机交界中，此宫引动四化星曜：${activeSihua.join("、")}，主因果枢纽倾斜、名禄纠葛、属于重中之重的气机变化点。`;
     }
 
     return reading;
@@ -402,24 +491,31 @@ export default function ZiweiChartCard({ baziResult, name }: ZiweiChartCardProps
               const csName = CHANG_SHENG_STEPS[csIdx];
 
               // Computes ages matrix
-              const baseLiunian = (ybBoardIdx - 1 + 12) % 12;
-              const baseXiaoxian = (ybBoardIdx + 1 + 12) % 12;
-              
-              const lAges = [
-                (palace.branchIdx - baseLiunian + 12) % 12 + 1,
-                (palace.branchIdx - baseLiunian + 12) % 12 + 13,
-                (palace.branchIdx - baseLiunian + 12) % 12 + 25,
-                (palace.branchIdx - baseLiunian + 12) % 12 + 37,
-                (palace.branchIdx - baseLiunian + 12) % 12 + 49
-              ];
+              // 流年：用流年地支每年逆时针递推一宫
+              const yearBranchIdx = BOARD_BRANCHES.indexOf(yearBranch);
+              const liunianBase = yearBranchIdx;
 
-              const xAges = [
-                (palace.branchIdx - baseXiaoxian + 12) % 12 + 1,
-                (palace.branchIdx - baseXiaoxian + 12) % 12 + 13,
-                (palace.branchIdx - baseXiaoxian + 12) % 12 + 25,
-                (palace.branchIdx - baseXiaoxian + 12) % 12 + 37,
-                (palace.branchIdx - baseXiaoxian + 12) % 12 + 49
-              ];
+              const lAges = [];
+              for (let j = 0; j < 6; j++) { // 显示6个流年年龄段
+                lAges.push((palace.branchIdx - liunianBase + 12) % 12 + 1 + 12 * j);
+              }
+
+              // 小限：先为每个i从0-11生成age数组，再根据性别分配给宫位
+              // 男性顺时针，女性逆时针
+              const xAges = [];
+              for (let i = 0; i < 12; i++) {
+                // 计算当前i对应的宫位索引
+                const idx = chartData.gender === "男"
+                  ? (age1Idx + i + 12) % 12  // 男性：ageIdx+i 顺时针
+                  : (age1Idx - i + 12) % 12; // 女性：ageIdx-i 逆时针
+                
+                if (idx === palace.branchIdx) {
+                  for (let j = 0; j < 6; j++) { // 显示6个小限年龄段
+                    xAges.push(12 * j + i + 1);
+                  }
+                  break;
+                }
+              }
 
               return (
                 <button
@@ -443,34 +539,29 @@ export default function ZiweiChartCard({ baziResult, name }: ZiweiChartCardProps
                       : ""
                   }`}
                 >
-                  {/* Top Header: Ages Matrix (流年 & 小限) strictly formatted in the corner */}
-                  <div className="absolute top-1 right-1 px-1.5 py-0.5 text-[10px] text-right leading-tight text-[#5a5a4c] font-mono select-none font-bold">
-                    <div>流: {lAges.slice(0, 3).join(",")}</div>
-                    <div>小: {xAges.slice(0, 3).join(",")}</div>
-                  </div>
-
                   {/* Upper portion: Columns of Vertical Stars */}
-                  <div className="flex flex-row gap-1.5 select-none h-[120px] overflow-hidden pt-4">
+                  <div className="flex flex-row gap-1.5 select-none h-[100px] overflow-hidden pt-4">
                     {/* Column 1: Major Stars (Red/Vibrant, Bold) */}
                     {palace.majorStars.map((ms, msIdx) => {
-                      const sh = palace.sihua[ms];
-                      const mw = getMiaoWang(ms, palace.branchName);
+                      const mw = ms.brightness || "平";
                       return (
                         <div key={msIdx} className="flex flex-col items-center border-r border-[#e5e5d5] last:border-0 pr-0.8 select-none font-serif">
                           <span className="font-black text-[#b91c1c] text-[13px] md:text-sm flex flex-col items-center justify-start leading-[13px] tracking-wide text-center">
-                            {ms.split('').map((char, charIdx) => <span key={charIdx}>{char}</span>)}
+                            {ms.name.split('').map((char, charIdx) => <span key={charIdx}>{char}</span>)}
                           </span>
                           <span className="text-[10.5px] font-black text-amber-900 leading-none mt-1.5 font-sans bg-amber-50 px-0.5 rounded-sm">
                             {mw}
                           </span>
-                          {sh && (
+                          {getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) && (
                             <span className={`text-[10px] font-sans font-bold leading-none w-4 h-4 flex items-center justify-center rounded-sm text-white mt-1.5 shadow-sm ${
-                              sh === "化禄" ? "bg-emerald-600" :
-                              sh === "化权" ? "bg-orange-600" :
-                              sh === "化科" ? "bg-blue-600" :
+                              getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化禄" ? "bg-emerald-600" :
+                              getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化权" ? "bg-orange-600" :
+                              getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化科" ? "bg-blue-600" :
                               "bg-rose-900"
                             }`}>
-                              {sh === "化禄" ? "禄" : sh === "化权" ? "权" : sh === "化科" ? "科" : "忌"}
+                              {getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化禄" ? "禄" :
+                               getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化权" ? "权" :
+                               getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化科" ? "科" : "忌"}
                             </span>
                           )}
                         </div>
@@ -482,38 +573,46 @@ export default function ZiweiChartCard({ baziResult, name }: ZiweiChartCardProps
                       </span>
                     )}
 
-                    {/* Column 2: Lucky / Auxiliary Stars (Teal / Blue, Vertical) */}
-                    {palace.luckyStars.map((ls, lsIdx) => {
-                      const sh = palace.sihua[ls];
+                    {/* Column 2: Minor Stars - Soft/Auxiliary (Teal / Blue, Vertical) */}
+                    {palace.minorStars.filter(s => s.type === "soft" || s.type === "lucun" || s.type === "tianma").map((ls, lsIdx) => {
                       return (
                         <div key={lsIdx} className="flex flex-col items-center pr-0.8 select-none font-serif">
                           <span className="font-extrabold text-[#15803d] text-[11.5px] md:text-xs flex flex-col items-center justify-start leading-[11px] tracking-normal">
-                            {ls.split('').map((char, charIdx) => <span key={charIdx}>{char}</span>)}
+                            {ls.name.split('').map((char, charIdx) => <span key={charIdx}>{char}</span>)}
                           </span>
-                          {sh && (
-                            <span className={`text-[9.5px] font-sans font-bold leading-none w-3.5 h-3.5 flex items-center justify-center rounded-sm text-white mt-1.5 ${
-                              sh === "化禄" ? "bg-emerald-600" :
-                              sh === "化权" ? "bg-orange-600" :
-                              sh === "化科" ? "bg-blue-600" :
-                              "bg-rose-900"
-                            }`}>
-                              {sh === "化禄" ? "禄" : sh === "化权" ? "权" : sh === "化科" ? "科" : "忌"}
-                            </span>
-                          )}
                         </div>
                       );
                     })}
 
-                    {/* Column 3: Harm Stars (Dark Indigo/Orange, Vertical) */}
-                    {palace.harmStars.map((hs, hsIdx) => {
+                    {/* Column 3: Minor Stars - Tough/Harm (Dark Indigo/Orange, Vertical) */}
+                    {palace.minorStars.filter(s => s.type === "tough").map((hs, hsIdx) => {
                       return (
                         <div key={hsIdx} className="flex flex-col items-center pr-0.8 select-none font-serif">
                           <span className="font-bold text-[#4f46e5] text-[11px] md:text-xs flex flex-col items-center justify-start leading-[11px] tracking-normal">
-                            {hs.split('').map((char, charIdx) => <span key={charIdx}>{char}</span>)}
+                            {hs.name.split('').map((char, charIdx) => <span key={charIdx}>{char}</span>)}
                           </span>
                         </div>
                       );
                     })}
+
+                    {/* Column 4: Adjective Stars (37/38杂星) - Small vertical text on the right */}
+                    {palace.adjectiveStars.length > 0 && (
+                      <div className="flex flex-row ml-auto pl-1 border-l border-[#e5e5d5]/50 gap-0.5 overflow-hidden">
+                        {palace.adjectiveStars.map((as, asIdx) => (
+                          <div key={asIdx} className="flex flex-col items-center select-none font-sans scale-[0.9] origin-top">
+                            <span className="font-medium text-[#7c7c64] text-[9.5px] md:text-[10px] flex flex-col items-center justify-start leading-[9px] tracking-tight">
+                              {as.name.split('').map((char, charIdx) => <span key={charIdx} className="leading-[9.5px]">{char}</span>)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 流年小限 - 放在星辰和分隔线之间，分两行 */}
+                  <div className="flex flex-col text-[9px] text-[#5a5a4c] font-mono select-none px-1 mt-1 gap-0.5">
+                    <span className="text-emerald-700 font-bold">流年:{lAges.join(",")}</span>
+                    <span className="text-amber-700 font-bold">小限:{xAges.join(",")}</span>
                   </div>
 
                   {/* Cell footer: Decadal ages range, Palace Name, Chang Sheng step & coords */}
@@ -528,12 +627,29 @@ export default function ZiweiChartCard({ baziResult, name }: ZiweiChartCardProps
                       </span>
                     </div>
 
-                    {/* Footer values: Chang sheng & Stem-Branch coordinate */}
-                    <div className="flex justify-between items-center text-[10.5px] md:text-xs text-[#5a5a40] mt-1 select-none leading-none">
-                      <span className="font-serif font-extrabold text-[#16a34a] bg-stone-100 px-1.5 py-0.5 rounded-sm">
-                        {csName}
-                      </span>
-                      <span className="font-serif font-bold tracking-tight text-stone-700">
+                    {/* Footer values: Chang sheng & Doctor & Jiangqian & Suiqian & Stem-Branch coordinate */}
+                    <div className="flex justify-between items-center text-[10px] sm:text-[10.5px] md:text-xs text-[#5a5a40] mt-1 select-none leading-none gap-0.5">
+                      <div className="flex flex-wrap items-center gap-0.5 max-w-[130px] sm:max-w-[155px] md:max-w-[185px]">
+                        <span className="font-serif font-black text-[#16a34a] bg-stone-100/80 border border-stone-200/40 px-0.5 py-0.5 rounded-xs text-[9px] sm:text-[9.5px] md:text-[10px] leading-none select-none">
+                          {csName}
+                        </span>
+                        {palace.boshi12 && (
+                          <span className={`font-serif font-black px-0.5 py-0.5 rounded-xs text-[9px] sm:text-[9.5px] md:text-[10px] leading-none select-none ${getBoshiStarColor(palace.boshi12)}`}>
+                            {palace.boshi12}
+                          </span>
+                        )}
+                        {palace.jiangqian12 && (
+                          <span className={`font-serif font-black px-0.5 py-0.5 rounded-xs text-[9px] sm:text-[9.5px] md:text-[10px] leading-none select-none ${getJiangqianStarColor(palace.jiangqian12)}`}>
+                            {palace.jiangqian12}
+                          </span>
+                        )}
+                        {palace.suiqian12 && (
+                          <span className={`font-serif font-black px-0.5 py-0.5 rounded-xs text-[9px] sm:text-[9.5px] md:text-[10px] leading-none select-none ${getSuiqianStarColor(palace.suiqian12)}`}>
+                            {palace.suiqian12}
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-serif font-bold tracking-tight text-stone-700 shrink-0 text-[10px] sm:text-xs">
                         {palace.stemName}{palace.branchName}
                       </span>
                     </div>
@@ -548,13 +664,7 @@ export default function ZiweiChartCard({ baziResult, name }: ZiweiChartCardProps
                 <Compass className="w-36 h-36 text-[#5a5a40]" />
               </div>
 
-              {/* Title */}
-              <div className="text-center z-10">
-                <h4 className="text-amber-800 font-serif font-extrabold text-sm tracking-widest relative inline-block">
-                  ★ 文墨天机命解中堂 ★
-                  <span className="absolute -bottom-1 inset-x-0 h-0.5 bg-amber-800/20"></span>
-                </h4>
-              </div>
+
 
               {/* Interactive Bazi Four Pillars Block directly inside Center Panel */}
               <div className="grid grid-cols-4 gap-1.5 p-1 bg-amber-900/5 rounded-lg border border-[#e3e3cb] z-10">
@@ -646,8 +756,8 @@ export default function ZiweiChartCard({ baziResult, name }: ZiweiChartCardProps
             {activePalace.majorStars.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {activePalace.majorStars.map((ms) => (
-                  <span key={ms} className="text-[10px] bg-white border border-[#c0c0ac] rounded px-2.5 py-0.5 text-rose-950 font-serif font-bold shadow-2xs">
-                    🌌 【主星耀】{ms}：{getMiaoWang(ms, activePalace.branchName)}位坐守，主持该宫五行造化运势气度。
+                  <span key={ms.name} className="text-[10px] bg-white border border-[#c0c0ac] rounded px-2.5 py-0.5 text-rose-950 font-serif font-bold shadow-2xs">
+                    🌌 【主星耀】{ms.name}：{getMiaoWang(ms.name, activePalace.branchName)}位坐守，主持该宫五行造化运势气度。
                   </span>
                 ))}
               </div>

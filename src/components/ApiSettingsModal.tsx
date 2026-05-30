@@ -14,7 +14,7 @@ const PROVIDERS = [
     id: "system",
     name: "🔮 系统默认 (Gemini 镜像库)",
     desc: "免密即享！由本排盘大师预配置的公共批释引擎（如提示大宗师闭关，代表公共额度已耗尽，推荐使用下方个人密钥）。",
-    defaultModel: "gemini-2.0-flash",
+    defaultModel: "gemini-3.5-flash",
     defaultUrl: ""
   },
   {
@@ -27,8 +27,8 @@ const PROVIDERS = [
   {
     id: "gemini",
     name: "♊ Gemini 官方 (个人密钥)",
-    desc: "谷歌官方大语言模型服务。支持最新的 2.0 代旗舰模型（如 gemini-2.0-flash）。",
-    defaultModel: "gemini-2.0-flash",
+    desc: "谷歌官方大语言模型服务。支持最新的 3.5 代旗舰模型（如 gemini-3.5-flash）。",
+    defaultModel: "gemini-3.5-flash",
     defaultUrl: "https://generativelanguage.googleapis.com"
   },
   {
