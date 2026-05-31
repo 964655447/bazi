@@ -545,25 +545,27 @@ export default function ZiweiChartCard({ baziResult, name }: ZiweiChartCardProps
                     {palace.majorStars.map((ms, msIdx) => {
                       const mw = ms.brightness || "平";
                       return (
-                        <div key={msIdx} className="flex flex-col items-center border-r border-[#e5e5d5] last:border-0 pr-0.8 select-none font-serif">
-                          <span className="font-black text-[#b91c1c] text-[13px] md:text-sm flex flex-col items-center justify-start leading-[13px] tracking-wide text-center">
-                            {ms.name.split('').map((char, charIdx) => <span key={charIdx}>{char}</span>)}
-                          </span>
+                        <div key={msIdx} className="flex flex-col items-center border-r border-[#e5e5d5] last:border-0 px-1 md:px-1.5 select-none font-serif relative">
+                          <div className="relative">
+                            <span className="font-black text-[#b91c1c] text-[13px] md:text-sm flex flex-col items-center justify-start leading-[13px] tracking-wide text-center">
+                              {ms.name.split('').map((char, charIdx) => <span key={charIdx}>{char}</span>)}
+                            </span>
+                            {getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) && (
+                              <span className={`absolute -right-3 top-2 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-sans font-black text-white shadow-xs border border-white/40 leading-none select-none ${
+                                getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化禄" ? "bg-emerald-600" :
+                                getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化权" ? "bg-orange-600" :
+                                getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化科" ? "bg-blue-600" :
+                                "bg-rose-900"
+                              }`}>
+                                {getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化禄" ? "禄" :
+                                 getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化权" ? "权" :
+                                 getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化科" ? "科" : "忌"}
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[10.5px] font-black text-amber-900 leading-none mt-1.5 font-sans bg-amber-50 px-0.5 rounded-sm">
                             {mw}
                           </span>
-                          {getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) && (
-                            <span className={`text-[10px] font-sans font-bold leading-none w-4 h-4 flex items-center justify-center rounded-sm text-white mt-1.5 shadow-sm ${
-                              getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化禄" ? "bg-emerald-600" :
-                              getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化权" ? "bg-orange-600" :
-                              getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化科" ? "bg-blue-600" :
-                              "bg-rose-900"
-                            }`}>
-                              {getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化禄" ? "禄" :
-                               getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化权" ? "权" :
-                               getMutagen(ms.name, chartData.yearGanZhi.charAt(0)) === "化科" ? "科" : "忌"}
-                            </span>
-                          )}
                         </div>
                       );
                     })}

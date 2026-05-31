@@ -123,29 +123,17 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
         const SHEN_ZHU_MAP = ["天相", "天梁", "天同", "天机", "文昌", "火星", "天相", "天梁", "天同", "天机", "文昌", "火星"];
         const shenZhu = SHEN_ZHU_MAP[yearBranchIdx % 12];
         
-        let txt = `文墨天机紫微斗数命盘\n`;
-        txt += `│\n`;
-        txt += `├API 版本 : 1.1.2\n`;
-        txt += `├App版本 : 2.5.9\n`;
-        txt += `├安星码 : C5VUC\n`;
-        txt += `├符号定义\n`;
-        txt += `│ ├(↓:离心自化)\n`;
-        txt += `│ ├(↑:向心自化，从对宫化入)\n`;
-        txt += `│ ├(┏ : 生日前小限)\n`;
-        txt += `│ └( ┓: 生日后小限)\n`;
+        let txt = `├安星码 : C5VUC\n`;
+        txt += `├符号定义 : (↓:离心自化), (↑:向心自化，从对宫化入)\n`;
         txt += `│\n`;
         txt += `├基本信息\n`;
         txt += `│ │\n`;
         txt += `│ ├性别 : ${baziResult.gender}\n`;
-        txt += `│ ├地理经度 : ${baziResult.longitude || 116.4}\n`;
-        txt += `│ ├钟表时间 : ${baziResult.birthTimeG}\n`;
-        txt += `│ ├真太阳时 : ${baziResult.birthTimeLST || baziResult.birthTimeG}\n`;
         txt += `│ ├农历时间 : ${zw.birthTimeL.replace("农历", "").trim()}\n`;
         
         const pillarsStr = `${fp.year.stem.name}${fp.year.branch.name} ${fp.month.stem.name}${fp.month.branch.name} ${fp.day.stem.name}${fp.day.branch.name} ${fp.hour.stem.name}${fp.hour.branch.name}`;
         txt += `│ ├节气四柱 : ${pillarsStr}\n`;
         txt += `│ ├非节气四柱 : ${pillarsStr}\n`;
-        txt += `│ ├五行局数 : ${zw.mingJu}\n`;
         txt += `│ └身主:${shenZhu}; 命主:${zw.mingZhu}; 子年斗君:${douJunBranch}; 身宫:${shenGongName}\n`;
         txt += `│\n`;
         txt += `├命盘十二宫\n`;
@@ -159,8 +147,8 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
           if (!p) return;
           
           const isLastPalace = outerIdx === exportOrder.length - 1;
-          const prefixPalace = isLastPalace ? " └" : " ├";
-          const subPrefix = isLastPalace ? "  " : " │";
+          const prefixPalace = isLastPalace ? "└" : "├";
+          const subPrefix = isLastPalace ? " " : "│";
           
           let palaceHeader = `${p.palaceName}[${p.stemName}${p.branchName}]`;
           if (p.isShenGong) {
@@ -194,19 +182,19 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
           const minorStarsStr = formatStars(p.minorStars, false);
           const adjectiveStarsStr = formatStars(p.adjectiveStars, false);
           
-          txt += `│ │ ${subPrefix}├主星 : ${majorStarsStr}\n`;
-          txt += `│ │ ${subPrefix}├辅星 : ${minorStarsStr}\n`;
-          txt += `│ │ ${subPrefix}├小星 : ${adjectiveStarsStr}\n`;
+          txt += `│ ${subPrefix} ├主星 : ${majorStarsStr}\n`;
+          txt += `│ ${subPrefix} ├辅星 : ${minorStarsStr}\n`;
+          txt += `│ ${subPrefix} ├小星 : ${adjectiveStarsStr}\n`;
           
           // 神煞
-          txt += `│ │ ${subPrefix}├神煞\n`;
-          txt += `│ │ ${subPrefix}│ ├岁前星 : ${p.suiqian12}\n`;
-          txt += `│ │ ${subPrefix}│ ├将前星 : ${p.jiangqian12}\n`;
-          txt += `│ │ ${subPrefix}│ ├十二长生 : ${p.changsheng12}\n`;
-          txt += `│ │ ${subPrefix}│ └太岁煞禄 : ${p.boshi12}\n`;
+          txt += `│ ${subPrefix} ├神煞\n`;
+          txt += `│ ${subPrefix} │ ├岁前星 : ${p.suiqian12}\n`;
+          txt += `│ ${subPrefix} │ ├将前星 : ${p.jiangqian12}\n`;
+          txt += `│ ${subPrefix} │ ├十二长生 : ${p.changsheng12}\n`;
+          txt += `│ ${subPrefix} │ └太岁煞禄 : ${p.boshi12}\n`;
           
-          // 大限, 小限, 流年, 限流叠宫
-          txt += `│ │ ${subPrefix}├大限 : ${p.decadalStart} ~ ${p.decadalEnd}虚岁\n`;
+          // 大限
+          txt += `│ ${subPrefix} ├大限 : ${p.decadalStart} ~ ${p.decadalEnd}虚岁\n`;
           
           // Compute minor limits
           let startLimitIdx = 0;
@@ -236,11 +224,11 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
           }
           const flowingYearsStr = flowingAges.slice(0, 5).join(",") + "虚岁";
           
-          txt += `│ │ ${subPrefix}├小限 : ${smallLimitsStr}\n`;
-          txt += `│ │ ${subPrefix}├流年 : ${flowingYearsStr}\n`;
-          txt += `│ │ ${subPrefix}└限流叠宫 : 无\n`;
+          txt += `│ ${subPrefix} ├小限 : ${smallLimitsStr}\n`;
+          txt += `│ ${subPrefix} └流年 : ${flowingYearsStr}\n`;
+          
           if (!isLastPalace) {
-            txt += `│\n`;
+            txt += `│ ${subPrefix} \n`;
           }
         });
         
@@ -252,7 +240,7 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
     };
 
     if (mode === "ziwei") {
-      return `你现在是资深的国学易经术数领域专家，请详细分析下面这个文墨天机紫微斗数命盘，综合使用三合紫微、飞星紫微、河洛紫微、钦天四化等各流派紫微斗数的分析技法，对命盘十二宫星曜分布、限流叠宫和各宫位间的飞宫四化进行细致分析，进而对命主的健康、学业、事业、财运、人际关系、婚姻和感情等各个方面进行全面分析和总结，关键事件须给出发生时间范围、吉凶属性、事件对命主的影响程度等信息，并结合命主的自身特点给出针对性的解决方案和建议。另外，命盘信息里附带了十二个大限共一百二十个流年的信息，请对前八个大限的所有流年进行分析，给出每一年需要关注的重大事件和注意事项。最后，别忘了提醒用户上述分析仅限于研究或娱乐目的使用。
+      return `你现在是资深的国学易经术数领域专家，请详细分析下面这个文墨天机紫微斗数命盘，综合使用三合紫微、飞星紫微、河洛紫微、钦天四化等各流派紫微斗数的分析技法，对命盘十二宫星曜分布和各宫位间的飞宫四化进行细致分析，进而对命主的健康、学业、事业、财运、人际关系、婚姻和感情等各个方面进行全面分析和总结，关键事件须给出发生时间范围、吉凶属性、事件对命主的影响程度等信息，并结合命主的自身特点给出针对性的解决方案和建议。最后，别忘了提醒用户上述分析仅限于研究或娱乐目的使用。
 
 ${compileZiweiText()}`;
     }
