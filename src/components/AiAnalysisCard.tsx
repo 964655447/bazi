@@ -61,6 +61,7 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
   const [stepIdx, setStepIdx] = useState<number>(0);
   const [copied, setCopied] = useState<boolean>(false);
   const [promptCopied, setPromptCopied] = useState<boolean>(false);
+  const [ziweiPromptMode, setZiweiPromptMode] = useState<"pure" | "combined">("combined");
 
   // Clear previous analysis when mode switches
   useEffect(() => {
@@ -240,9 +241,66 @@ export default function AiAnalysisCard({ baziResult, apiConfig, onOpenApiSetting
     };
 
     if (mode === "ziwei") {
-      return `你现在是资深的国学易经术数领域专家，请详细分析下面这个文墨天机紫微斗数命盘，综合使用三合紫微、飞星紫微、河洛紫微、钦天四化等各流派紫微斗数的分析技法，对命盘十二宫星曜分布和各宫位间的飞宫四化进行细致分析，进而对命主的健康、学业、事业、财运、人际关系、婚姻和感情等各个方面进行全面分析和总结，关键事件须给出发生时间范围、吉凶属性、事件对命主的影响程度等信息，并结合命主的自身特点给出针对性的解决方案和建议。最后，别忘了提醒用户上述分析仅限于研究或娱乐目的使用。
+      if (ziweiPromptMode === "combined") {
+        const fp = baziResult.fourPillars;
+        const baziPillarsText = `${fp.year.stem.name}${fp.year.branch.name} ${fp.month.stem.name}${fp.month.branch.name} ${fp.day.stem.name}${fp.day.branch.name} ${fp.hour.stem.name}${fp.hour.branch.name}`;
+        
+        return `你现在是顶级国学命理大师，精通【子平八字】和【紫微斗数】两大古老神数，并擅长将其深度融合、相互印证进行“双盘合参批释”。
+请基于以下给出的生辰八字排盘数据与文墨天机紫微斗数命盘，为缘主提供全面、深刻、通俗易懂又富有哲理的八字与紫微斗数深度合参批释报告。
 
+【一、八字乾坤排盘】
+- 缘主姓名：${name || "未填写（请以'缘主'称呼）"}
+- 性别：${baziResult.gender}
+- 公历生日：${baziResult.birthTimeG}
+- 真太阳时：${baziResult.birthTimeLST || baziResult.birthTimeG}
+- 八字四柱：${baziPillarsText}
+  - 年柱：${fp.year.stem.name}${fp.year.branch.name} (十神: ${fp.year.stem.tenGod || "无"}, 纳音: ${fp.year.nayin || "无"}, 空亡: ${fp.year.emptyVoid?.join(", ") || "无"}, 神煞: ${fp.year.shensha?.join(", ") || "无"})
+  - 月柱：${fp.month.stem.name}${fp.month.branch.name} (十神: ${fp.month.stem.tenGod || "无"}, 纳音: ${fp.month.nayin || "无"}, 神煞: ${fp.month.shensha?.join(", ") || "无"})
+  - 日柱：${fp.day.stem.name}${fp.day.branch.name} (日元: ${fp.day.stem.name}, 纳音: ${fp.day.nayin || "无"}, 空亡: ${fp.day.emptyVoid?.join(", ") || "无"}, 神煞: ${fp.day.shensha?.join(", ") || "无"})
+  - 时柱：${fp.hour.stem.name}${fp.hour.branch.name} (十神: ${fp.hour.stem.tenGod || "无"}, 纳音: ${fp.hour.nayin || "无"}, 神煞: ${fp.hour.shensha?.join(", ") || "无"})
+- 地支藏干：
+  - 年支藏干：${formatHiddenStems("year")}
+  - 月支藏干：${formatHiddenStems("month")}
+  - 日支藏干：${formatHiddenStems("day")}
+  - 时支藏干：${formatHiddenStems("hour")}
+- 大运轨迹：${formatDaYunCycles()}
+
+【二、文墨天机紫微斗数命盘】
+${compileZiweiText()}
+
+【深度合参分析纲要】
+请按照以下五大篇章，撰写出一份国学典雅、理智通透、极富启发意义的合参报告（请注意，不要生硬地分开讲解，而要把八字五行和紫微星盘有机融汇）：
+
+1. 🌌 **八字日元与紫微命格局之交相辉映（心性潜能）**：
+   - 将八字日主天干（如${fp.day.stem.name}的五行及比劫印绶心性）与紫微命身二宫的主导曜宿（如紫微、七杀等）进行深度对照，勾勒出命主独特的性格底色、精神追求与先天禀赋。
+   - 探究八字地支刑冲破害及五行喜忌，如何映射在紫微命身星曜的庙旺利陷与精神风貌之中。
+
+2. 💼 **八字财官星与紫微官禄财帛宫双重印证（事业财运）**：
+   - 融合分析：看八字的正偏官杀、正偏财星在四柱中的气势与喜忌，将其与紫微斗数中【官禄宫】及【财帛宫】的主星组合、生年四化、吉曜凶煞互锁结合。
+   - 分析命主适合在哪个具体行业领域大展宏图（行政、商业、创意亦或学术），剖析其一生的财气格局、蓄财守成建议，并提示行运中事业飞跃的关键节点。
+
+3. 👩‍❤️‍👨 **八字婚姻宫与紫微夫妻宫深度契合（婚恋情缘）**：
+   - 互参日元婚姻地支五行生克、夫妻星喜忌，以及紫微斗数【夫妻宫】之星曜、生年四化或飞星化入。
+   - 解密命主命定的心仪另一半特质，洞悉婚恋相处中有利或摩擦的模式，并在岁运波动期（大限流年）给予修心包容的指派，指引如何建立和气家门。
+
+4. 🩺 **八字五行平衡与紫微疾厄宫双重把脉（健康养生）**：
+   - 依据八字五行的缺旺、燥湿寒暖，结合紫微【疾厄宫】的十四主星、小星、煞忌分布，准确判定未来脏腑、经络方面的隐患。
+   - 指引贴合天然古法的健康养生方法（包含情绪养生、食疗调和及身体活动指针），做到“天人合一、预防胜于治疗”。
+
+5. 📅 **限流重叠、八字大运流年深度开释（近期转折点）**：
+   - 将八字大运与当前流年（${baziResult.flowingTime?.year || "无"}年）之干支生克，同紫微斗数流年限度、流年宫位叠宫和四化碰撞合并看。
+   - 精准寻找当下和未来一两年的重大契机或防御漏洞，注明好运坏运的特性、发生事件的类型以及应物修持的针对性策略。
+
+【撰写原则】：
+- 融合古典厚重与现代温暖，行文富含哲理、亲切恳切，不使用惊悚恐吓之词。
+- 重点突出，善于利用 Markdown 分割线（---）、精巧表格 and 提示区块（💡、⚠️、🌟）进行排版，字数推荐在 1500~2000 字左右。
+- 最后别忘了提醒此分析仅供娱乐与学术探究参考。`;
+      } else {
+        return `你现在是资深的国学易经术数领域专家，请详细分析下面这个文墨天机紫微斗数命盘，综合使用三合紫微、飞星紫微、河洛紫微、钦天四化等各流派紫微斗数的分析技法，对命盘十二宫星曜分布和各宫位间的飞宫四化进行细致分析，进而对命主的健康、学业、事业、财运、人际关系、婚姻和感情等各个方面进行全面分析和总结，关键事件须给出发生时间范围、吉凶属性、事件对命主的影响程度等信息，并结合命主的自身特点给出针对性的解决方案和建议。最后，别忘了提醒用户上述分析仅限于研究或娱乐目的使用。
+
+文墨天机紫微斗数命盘
 ${compileZiweiText()}`;
+      }
     }
 
     // Default or Bazi Mode
@@ -358,37 +416,76 @@ ${compileZiweiText()}`;
   return (
     <div className="bg-white border border-[#e5e5d5] rounded-2xl p-6 md:p-8 shadow-sm space-y-6 text-[#4a4a40]" id="ai_analysis_section">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#e5e5d5] pb-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[#e5e5d5] pb-4 gap-4">
         <div>
-          <h3 className="text-lg font-serif font-bold text-[#5a5a40] flex items-center gap-2">
-            <span>◇</span> {mode === "ziwei" ? "智能 AI 紫微星命批注（大宗师星宿参合）" : "智能 AI 八字命理批注（大宗师深度解读）"}
+          <h3 className="text-lg font-serif font-bold text-[#5a5a40] flex items-center justify-start gap-2 flex-wrap sm:flex-nowrap font-black">
+            <span>◇</span> {mode === "ziwei" ? (ziweiPromptMode === "combined" ? "智能 AI 紫微星命批注（八字+紫微合批）" : "智能 AI 紫微星命批注（大宗师星宿详析）") : "智能 AI 八字命理批注（大宗师深度解读）"}
           </h3>
           <p className="text-xs text-[#8a8a70] mt-1">
             {mode === "ziwei" 
-              ? "依十四曜主星坐守、十二宫命运轨辙与飞星四化，作全维度深度星运推演" 
+              ? (ziweiPromptMode === "combined" ? "独创双盘统合：结合子平五行弱衰、地支藏含、纳音大运，与紫微斗数十二宫生年四化有机合参详批" : "正统紫微：依十四曜主星坐守、十二宫命运轨辙与飞星四化，作全维度深度星运推演") 
               : "融合子平五行旺衰、神煞星光、起运岁期，为您提供万字深度八字宏篇大论"}
           </p>
         </div>
 
-        {!loading && !analysis && (
-          <div className="flex gap-2">
-            <button
-              onClick={onOpenApiSettings}
-              className="flex items-center gap-1.5 bg-[#ebebe0]/80 hover:bg-[#ebebe0] text-[#5a5a40] border border-[#dcdcc8] px-4 py-2 rounded-full font-bold text-xs md:text-sm transition-all cursor-pointer"
-              title="配置 AI 批释大引擎"
-            >
-              <Settings className="w-3.5 h-3.5" />
-              配置引擎
-            </button>
-            <button
-              onClick={fetchAnalysis}
-              className="flex items-center gap-1.5 bg-[#5a5a40] hover:bg-[#4a4a40] text-[#f5f5f0] px-4 py-2 rounded-full font-bold text-xs md:text-sm shadow hover:shadow-md transition-all cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              {mode === "ziwei" ? "推演星曜" : "批览八字"}
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2.5 self-end md:self-auto flex-wrap sm:flex-nowrap">
+          {mode === "ziwei" && (
+            <div className="bg-[#ebebe0]/75 border border-[#dcdcc8] rounded-full p-0.5 flex text-xs select-none">
+              <button
+                type="button"
+                onClick={() => {
+                  setZiweiPromptMode("combined");
+                  setAnalysis("");
+                  setError("");
+                }}
+                className={`px-3 py-1.5 rounded-full font-bold transition-all cursor-pointer ${
+                  ziweiPromptMode === "combined"
+                    ? "bg-[#5a5a40] text-white shadow-xs"
+                    : "text-[#8a8a70] hover:text-[#5a5a40]"
+                }`}
+              >
+                ☯️ 八字+紫微合批
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setZiweiPromptMode("pure");
+                  setAnalysis("");
+                  setError("");
+                }}
+                className={`px-3 py-1.5 rounded-full font-bold transition-all cursor-pointer ${
+                  ziweiPromptMode === "pure"
+                    ? "bg-[#5a5a40] text-white shadow-xs"
+                    : "text-[#8a8a70] hover:text-[#5a5a40]"
+                }`}
+              >
+                💫 纯紫微详析
+              </button>
+            </div>
+          )}
+
+          {!loading && !analysis && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onOpenApiSettings}
+                className="flex items-center gap-1.5 bg-[#ebebe0]/80 hover:bg-[#ebebe0] text-[#5a5a40] border border-[#dcdcc8] px-4 py-2 rounded-full font-bold text-xs md:text-sm transition-all cursor-pointer"
+                title="配置 AI 批释大引擎"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                配置引擎
+              </button>
+              <button
+                type="button"
+                onClick={fetchAnalysis}
+                className="flex items-center gap-1.5 bg-[#5a5a40] hover:bg-[#4a4a40] text-[#f5f5f0] px-4 py-2 rounded-full font-bold text-xs md:text-sm shadow hover:shadow-md transition-all cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {mode === "ziwei" ? (ziweiPromptMode === "combined" ? "大合参批命" : "推演星曜") : "批览八字"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Loading Screen */}
@@ -506,7 +603,7 @@ ${compileZiweiText()}`;
           <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-[#ebebe0]/40 px-4 py-3 rounded-xl border border-[#dcdcc8]">
             <div className="flex items-center gap-2 text-xs text-[#5a5a40] font-serif font-bold">
               <FileText className="w-4 h-4 text-[#5a5a40]" />
-              {mode === "ziwei" ? "紫微星曜神化命学大玄阅" : "八字神算解梦大玄阅"} ({apiConfig.provider === "system" ? "系统默认引擎" : `私有 API: ${apiConfig.provider.toUpperCase()}`})
+              {mode === "ziwei" ? (ziweiPromptMode === "combined" ? "大宗师双盘五行星位深度合参批释" : "大天盘星曜神化命学大玄阅") : "八字五行弱衰格局理解神阅"} ({apiConfig.provider === "system" ? "系统默认引擎" : `私有 API: ${apiConfig.provider.toUpperCase()}`})
             </div>
             <div className="flex gap-2 w-full sm:w-auto flex-wrap">
               <button
