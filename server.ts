@@ -49,20 +49,20 @@ async function startServer() {
 - 真太阳时：${baziData.birthTimeLST} (出生地经度: ${baziData.longitude}°E, 城市: ${baziData.cityName})
 
 【四柱乾坤（生辰八字）】
-- 年柱：${baziData.fourPillars.year.stem.name}${baziData.fourPillars.year.branch.name} (十神: ${baziData.fourPillars.year.stem.tenGod || "无"}, 纳音: ${baziData.fourPillars.year.nayin}, 空亡: ${baziData.fourPillars.year.emptyVoid.join(", ") || "无"}, 神煞: ${baziData.fourPillars.year.shensha.join(", ") || "无"})
-- 月柱：${baziData.fourPillars.month.stem.name}${baziData.fourPillars.month.branch.name} (十神: ${baziData.fourPillars.month.stem.tenGod || "无"}, 纳音: ${baziData.fourPillars.month.nayin}, 神煞: ${baziData.fourPillars.month.shensha.join(", ") || "无"})
-- 日柱：${baziData.fourPillars.day.stem.name}${baziData.fourPillars.day.branch.name} (日主(天干): ${baziData.fourPillars.day.stem.name}, 纳音: ${baziData.fourPillars.day.nayin}, 空亡: ${baziData.fourPillars.day.emptyVoid.join(", ") || "无"}, 神煞: ${baziData.fourPillars.day.shensha.join(", ") || "无"})
-- 时柱：${baziData.fourPillars.hour.stem.name}${baziData.fourPillars.hour.branch.name} (十神: ${baziData.fourPillars.hour.stem.tenGod || "无"}, 纳音: ${baziData.fourPillars.hour.nayin}, 神煞: ${baziData.fourPillars.hour.shensha.join(", ") || "无"})
+- 年柱：${baziData.fourPillars.year.stem.name}${baziData.fourPillars.year.branch.name} (十神: ${baziData.fourPillars.year.stem.tenGod || "无"}, 纳音: ${baziData.fourPillars.year.nayin}, 空亡: ${(baziData.fourPillars.year.emptyVoid || []).join(", ") || "无"}, 神煞: ${(baziData.fourPillars.year.shensha || []).join(", ") || "无"})
+- 月柱：${baziData.fourPillars.month.stem.name}${baziData.fourPillars.month.branch.name} (十神: ${baziData.fourPillars.month.stem.tenGod || "无"}, 纳音: ${baziData.fourPillars.month.nayin}, 神煞: ${(baziData.fourPillars.month.shensha || []).join(", ") || "无"})
+- 日柱：${baziData.fourPillars.day.stem.name}${baziData.fourPillars.day.branch.name} (日主(天干): ${baziData.fourPillars.day.stem.name}, 纳音: ${baziData.fourPillars.day.nayin}, 空亡: ${(baziData.fourPillars.day.emptyVoid || []).join(", ") || "无"}, 神煞: ${(baziData.fourPillars.day.shensha || []).join(", ") || "无"})
+- 时柱：${baziData.fourPillars.hour.stem.name}${baziData.fourPillars.hour.branch.name} (十神: ${baziData.fourPillars.hour.stem.tenGod || "无"}, 纳音: ${baziData.fourPillars.hour.nayin}, 神煞: ${(baziData.fourPillars.hour.shensha || []).join(", ") || "无"})
 
 【地支藏干】
-- 年支藏干：${baziData.fourPillars.year.branch.hiddenStems.map((s: any) => `${s.name}(${s.tenGod})`).join(", ")}
-- 月支藏干：${baziData.fourPillars.month.branch.hiddenStems.map((s: any) => `${s.name}(${s.tenGod})`).join(", ")}
-- 日支藏干：${baziData.fourPillars.day.branch.hiddenStems.map((s: any) => `${s.name}(${s.tenGod})`).join(", ")}
-- 时支藏干：${baziData.fourPillars.hour.branch.hiddenStems.map((s: any) => `${s.name}(${s.tenGod})`).join(", ")}
+- 年支藏干：${(baziData.fourPillars.year.branch.hiddenStems || []).map((s: any) => `${s.name}(${s.tenGod})`).join(", ") || "无"}
+- 月支藏干：${(baziData.fourPillars.month.branch.hiddenStems || []).map((s: any) => `${s.name}(${s.tenGod})`).join(", ") || "无"}
+- 日支藏干：${(baziData.fourPillars.day.branch.hiddenStems || []).map((s: any) => `${s.name}(${s.tenGod})`).join(", ") || "无"}
+- 时支藏干：${(baziData.fourPillars.hour.branch.hiddenStems || []).map((s: any) => `${s.name}(${s.tenGod})`).join(", ") || "无"}
 
 【大运气势】
 - 起运年纪：${baziData.daYun.transitAgeDescription} (交运公历时间：${baziData.daYun.transitExactDate})
-- 大运前列：${baziData.daYun.cycles.slice(0, 5).map((c: any) => `自${c.startAge}岁起行 [${c.stem}${c.branch}] 运(十神: ${c.tenGod}, 纳音: ${c.nayin}, 星运: ${c.changsheng})`).join("；")}
+- 大运前列：${(baziData.daYun.cycles || []).slice(0, 5).map((c: any) => `自${c.startAge}岁起行 [${c.stem}${c.branch}] 运(十神: ${c.tenGod}, 纳音: ${c.nayin}, 星运: ${c.changsheng})`).join("；") || "无"}
 
 【当前运势流转（今日运学）】
 - 当前流年：${baziData.flowingTime.year} (十神: ${baziData.flowingTime.yearTenGod}, 纳音: ${baziData.flowingTime.yearNayin})
@@ -108,14 +108,17 @@ async function startServer() {
 
       // Default presets if empty
       if (provider === "deepseek") {
-        baseUrl = baseUrl || "https://api.deepseek.com/v1";
-        model = model || "deepseek-chat";
+        baseUrl = baseUrl || "https://api.deepseek.com";
+        model = model || "deepseek-v4-flash";
       } else if (provider === "gemini") {
         baseUrl = baseUrl || "https://generativelanguage.googleapis.com";
         model = model || "gemini-3.5-flash";
       } else if (provider === "openai") {
         baseUrl = baseUrl || "https://api.openai.com/v1";
         model = model || "gpt-4o-mini";
+      } else if (provider === "alibaba") {
+        baseUrl = baseUrl || "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        model = model || "qwen-plus";
       } else if (provider === "custom") {
         if (!baseUrl) {
           return res.status(400).json({ error: "由于您选择「自定义兼容接口」，请在下方输入您的‘API 接口代理地址 (Base URL)’。" });
@@ -134,20 +137,36 @@ async function startServer() {
 
       // Make OpenAI-compatible HTTP Chat Completion Request
       const url = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
-      
+
+      // DeepSeek V4 默认开启 thinking(思考) 模式，生成长文本命理分析时极慢、
+      // 极易触发前端/后端超时。命理批释无需深度推理，显式关闭思考以提速、防超时。
+      const requestBody: Record<string, any> = {
+        model: model,
+        messages: [
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.6
+      };
+      if (provider === "deepseek") {
+        // DeepSeek V4 默认开启 thinking(思考) 模式，命理批释无需深度推理，
+        // 显式关闭以提速、防超时。
+        requestBody.thinking = { type: "disabled" };
+      } else if (provider === "alibaba") {
+        // 阿里通义千问 qwen3.x 系列默认开启思考模式，长文本命理分析易超时。
+        // 阿里思考模式由 enable_thinking(布尔) 控制，与 DeepSeek 的 thinking.type 不同；
+        // 对默认关闭思考的 qwen-plus/max 等模型此参数会被安全忽略，无副作用。
+        requestBody.enable_thinking = false;
+      }
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            { role: "user", content: prompt }
-          ],
-          temperature: 0.6
-        })
+        body: JSON.stringify(requestBody),
+        // 60s 超时，避免阿里接口无响应时后端无限挂起
+        signal: AbortSignal.timeout(60000)
       });
 
       if (!response.ok) {

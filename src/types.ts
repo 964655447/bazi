@@ -87,7 +87,7 @@ export interface BaziChartResult {
 }
 
 export interface ApiConfig {
-  provider: "system" | "gemini" | "deepseek" | "openai" | "custom";
+  provider: "system" | "gemini" | "deepseek" | "openai" | "alibaba" | "custom";
   apiKey: string;
   baseUrl: string;
   model: string;

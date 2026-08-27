@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { X, Key, Globe, Cpu, Eye, EyeOff, Check, AlertCircle, HelpCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Key, Globe, Cpu, Eye, EyeOff, AlertCircle, HelpCircle } from "lucide-react";
 import { ApiConfig } from "../types";
 
 interface ApiSettingsModalProps {
@@ -7,6 +7,14 @@ interface ApiSettingsModalProps {
   onClose: () => void;
   config: ApiConfig;
   onSave: (newConfig: ApiConfig) => void;
+}
+
+type ProviderId = ApiConfig["provider"];
+
+interface ProviderConfig {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
 }
 
 const PROVIDERS = [
@@ -20,8 +28,8 @@ const PROVIDERS = [
   {
     id: "deepseek",
     name: "🐳 DeepSeek 官方 (极力推荐)",
-    desc: "低延迟、高智商国学理解首选！支持 DeepSeek-V3 (deepseek-chat) / R1 深度推理 (deepseek-reasoner)。",
-    defaultModel: "deepseek-chat",
+    desc: "低延迟、高智商国学理解首选！默认 deepseek-v4-flash（最新 V4 系列），也可换 deepseek-v4-pro 更强但更慢。",
+    defaultModel: "deepseek-v4-flash",
     defaultUrl: "https://api.deepseek.com/v1"
   },
   {
@@ -39,6 +47,13 @@ const PROVIDERS = [
     defaultUrl: "https://api.openai.com/v1"
   },
   {
+    id: "alibaba",
+    name: "🐼 阿里通义千问 (DashScope)",
+    desc: "国内阿里云大模型，国学语境理解优秀，价格普惠。支持 qwen-plus / qwen-max / qwen-turbo 等系列。",
+    defaultModel: "qwen-plus",
+    defaultUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  },
+  {
     id: "custom",
     name: "🛠️ 自定义兼容接口 (第三方/中转)",
     desc: "适用于各种大模型中转站、本地 Ollama 部署、或国内各大兼容 OpenAI 协议的厂商服务。",
@@ -47,21 +62,60 @@ const PROVIDERS = [
   }
 ];
 
+const STORAGE_ALL_KEY = "bazi_api_configs_all";
+
+const getDefaultConfig = (provider: ProviderId): ProviderConfig => {
+  if (provider === "system") {
+    return { apiKey: "", baseUrl: "", model: "" };
+  }
+  const preset = PROVIDERS.find((p) => p.id === provider);
+  return {
+    apiKey: "",
+    baseUrl: preset?.defaultUrl || "",
+    model: preset?.defaultModel || ""
+  };
+};
+
+const loadAllConfigs = (): Partial<Record<ProviderId, ProviderConfig>> => {
+  try {
+    const raw = localStorage.getItem(STORAGE_ALL_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") return parsed;
+    }
+  } catch (e) {
+    console.error("[ApiSettings] load configs error:", e);
+  }
+  return {};
+};
+
 export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: ApiSettingsModalProps) {
-  const [provider, setProvider] = useState<ApiConfig["provider"]>(config.provider);
+  const [provider, setProvider] = useState<ProviderId>(config.provider);
   const [apiKey, setApiKey] = useState<string>(config.apiKey);
   const [baseUrl, setBaseUrl] = useState<string>(config.baseUrl);
   const [model, setModel] = useState<string>(config.model);
   const [showKey, setShowKey] = useState<boolean>(false);
-  const [showStatus, setShowStatus] = useState<{ type: "success" | "error" | null; msg: string }>({
+  const [showStatus, setShowStatus] = useState<{ type: "success" | "error" | "loading" | null; msg: string }>({
     type: null,
     msg: ""
   });
   const [testing, setTesting] = useState<boolean>(false);
+  const [allConfigs, setAllConfigs] = useState<Partial<Record<ProviderId, ProviderConfig>>>({});
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Sync with current config on load/opening
   useEffect(() => {
     if (isOpen) {
+      const saved = loadAllConfigs();
+      // Merge the currently active config into its provider slot so nothing is lost
+      const merged: Partial<Record<ProviderId, ProviderConfig>> = { ...saved };
+      merged[config.provider] = {
+        ...(merged[config.provider] || getDefaultConfig(config.provider)),
+        apiKey: config.apiKey,
+        baseUrl: config.baseUrl,
+        model: config.model
+      };
+      setAllConfigs(merged);
       setProvider(config.provider);
       setApiKey(config.apiKey);
       setBaseUrl(config.baseUrl);
@@ -70,21 +124,54 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
     }
   }, [isOpen, config]);
 
-  // Auto-populate when provider shifts to keep it incredibly friendly
-  const handleProviderChange = (newProvider: ApiConfig["provider"]) => {
-    setProvider(newProvider);
-    const preset = PROVIDERS.find((p) => p.id === newProvider);
-    if (preset) {
-      if (newProvider === "system") {
-        setApiKey("");
-        setBaseUrl("");
-        setModel("");
-      } else {
-        // Only update if current inputs look empty/meaningless
-        setBaseUrl(preset.defaultUrl);
-        setModel(preset.defaultModel);
+  // Persist a single provider's config into the allConfigs map
+  const stashCurrentProvider = () => {
+    setAllConfigs((prev) => ({
+      ...prev,
+      [provider]: { apiKey, baseUrl, model }
+    }));
+  };
+
+  // Update current inputs and also mirror into allConfigs so switching providers keeps edits
+  const updateCurrentConfig = (patch: Partial<ProviderConfig>) => {
+    if (patch.apiKey !== undefined) setApiKey(patch.apiKey);
+    if (patch.baseUrl !== undefined) setBaseUrl(patch.baseUrl);
+    if (patch.model !== undefined) setModel(patch.model);
+    setAllConfigs((prev) => ({
+      ...prev,
+      [provider]: { apiKey, baseUrl, model, ...prev[provider], ...patch }
+    }));
+  };
+
+  const stopAnyTest = () => {
+    if (abortControllerRef.current) {
+      try {
+        abortControllerRef.current.abort();
+      } catch {
+        // ignore
       }
+      abortControllerRef.current = null;
     }
+    setTesting(false);
+  };
+
+  // Switch provider: save current provider inputs, restore the new provider's last inputs
+  const handleProviderChange = (newProvider: ProviderId) => {
+    if (testing) stopAnyTest();
+
+    // Save whatever is currently in the inputs for the old provider
+    setAllConfigs((prev) => ({
+      ...prev,
+      [provider]: { apiKey, baseUrl, model }
+    }));
+
+    setProvider(newProvider);
+    setShowStatus({ type: null, msg: "" });
+
+    const next = allConfigs[newProvider] || getDefaultConfig(newProvider);
+    setApiKey(next.apiKey);
+    setBaseUrl(next.baseUrl);
+    setModel(next.model);
   };
 
   const handleSaveAndConfirm = () => {
@@ -105,17 +192,29 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
       return;
     }
 
-    const updatedConfig: ApiConfig = {
-      provider,
+    const trimmed: ProviderConfig = {
       apiKey: apiKey.trim(),
       baseUrl: baseUrl.trim(),
       model: model.trim()
     };
 
+    // Persist all providers (current one takes precedence) and the active one separately
+    const finalAll: Partial<Record<ProviderId, ProviderConfig>> = {
+      ...allConfigs,
+      [provider]: trimmed
+    };
+    setAllConfigs(finalAll);
+    localStorage.setItem(STORAGE_ALL_KEY, JSON.stringify(finalAll));
+
+    const updatedConfig: ApiConfig = {
+      provider,
+      ...trimmed
+    };
+
     onSave(updatedConfig);
     setShowStatus({
       type: "success",
-      msg: "配置成功！已妥善保存至您的浏览器本地缓存中。"
+      msg: "配置成功！已按供应商隔离保存至浏览器本地缓存中。"
     });
     setTimeout(() => {
       onClose();
@@ -128,8 +227,14 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
       setShowStatus({ type: "error", msg: "测试连接前，请填入相应的 API 密钥。" });
       return;
     }
+
+    stopAnyTest();
     setTesting(true);
-    setShowStatus({ type: null, msg: "" });
+    setShowStatus({ type: "loading", msg: "🔮 正在连接命理大宗师，预计需 10-30 秒生成命理分析，请稍候..." });
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     try {
       const response = await fetch("/api/bazi-analyze", {
@@ -137,6 +242,7 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
         headers: {
           "Content-Type": "application/json"
         },
+        signal: controller.signal,
         body: JSON.stringify({
           // Mock simple calculation for quick validating
           baziData: {
@@ -146,10 +252,10 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
             longitude: 116.4,
             cityName: "北京测速支点",
             fourPillars: {
-              year: { stem: { name: "乙" }, branch: { name: "亥" }, nayin: "山头火", emptyVoid: [], shensha: [], selfSitting: { tenGod: "正印", changsheng: "死" } },
-              month: { stem: { name: "丙" }, branch: { name: "戌" }, nayin: "屋上土", emptyVoid: [], shensha: [], selfSitting: { tenGod: "正官", changsheng: "墓" } },
-              day: { stem: { name: "戊" }, branch: { name: "寅" }, nayin: "城头土", emptyVoid: [], shensha: [], selfSitting: { tenGod: "七杀", changsheng: "长生" } },
-              hour: { stem: { name: "丙" }, branch: { name: "辰" }, nayin: "沙中土", emptyVoid: [], shensha: [], selfSitting: { tenGod: "偏印", changsheng: "冠带" } }
+              year: { stem: { name: "乙" }, branch: { name: "亥", hiddenStems: [{ name: "壬", tenGod: "偏财" }, { name: "甲", tenGod: "七杀" }] }, nayin: "山头火", emptyVoid: [], shensha: [], selfSitting: { tenGod: "正印", changsheng: "死" } },
+              month: { stem: { name: "丙" }, branch: { name: "戌", hiddenStems: [{ name: "戊", tenGod: "比肩" }, { name: "辛", tenGod: "伤官" }, { name: "丁", tenGod: "正印" }] }, nayin: "屋上土", emptyVoid: [], shensha: [], selfSitting: { tenGod: "正官", changsheng: "墓" } },
+              day: { stem: { name: "戊" }, branch: { name: "寅", hiddenStems: [{ name: "甲", tenGod: "七杀" }, { name: "丙", tenGod: "偏印" }, { name: "戊", tenGod: "比肩" }] }, nayin: "城头土", emptyVoid: [], shensha: [], selfSitting: { tenGod: "七杀", changsheng: "长生" } },
+              hour: { stem: { name: "丙" }, branch: { name: "辰", hiddenStems: [{ name: "戊", tenGod: "比肩" }, { name: "乙", tenGod: "正官" }, { name: "癸", tenGod: "正财" }] }, nayin: "沙中土", emptyVoid: [], shensha: [], selfSitting: { tenGod: "偏印", changsheng: "冠带" } }
             },
             daYun: { transitAgeDescription: "7岁", transitExactDate: "2002年02月", cycles: [] },
             flowingTime: { year: "丙午", month: "癸巳", day: "庚子", yearTenGod: "偏印", monthTenGod: "正财", dayTenGod: "食神", yearNayin: "天河水" },
@@ -174,11 +280,20 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
         msg: "🎉 连通成功！命理大宗师在线回应，反馈模型： " + (model || "默认模型")
       });
     } catch (err: any) {
-      setShowStatus({
-        type: "error",
-        msg: "❌ 连通测试失败：" + (err.message || "未知网关超载，请检查网络或密钥有效性")
-      });
+      if (err.name === "AbortError") {
+        setShowStatus({
+          type: "error",
+          msg: "❌ 连通测试超时（30秒）：网络较慢或接口无响应，请检查网络或稍后重试。"
+        });
+      } else {
+        setShowStatus({
+          type: "error",
+          msg: "❌ 连通测试失败：" + (err.message || "未知网关超载，请检查网络或密钥有效性")
+        });
+      }
     } finally {
+      clearTimeout(timeoutId);
+      abortControllerRef.current = null;
       setTesting(false);
     }
   };
@@ -208,7 +323,7 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
             <div>
               <h3 className="text-lg font-bold font-serif text-[#5a5a40]">AI 批释大引擎配置</h3>
               <p className="text-xs text-[#8a8a70]">
-                开启您的智能算命。支持国内 DeepSeek、谷歌 Gemini 和自建兼容节点。
+                开启您的智能算命。支持国内 DeepSeek、阿里通义千问、谷歌 Gemini 和自建兼容节点。
               </p>
             </div>
           </div>
@@ -226,11 +341,13 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
           {/* Status Message Alerts */}
           {showStatus.type && (
             <div className={`p-4 rounded-2xl flex items-start gap-3 text-xs leading-relaxed border ${
-              showStatus.type === "success" 
-                ? "bg-emerald-50 text-emerald-800 border-emerald-200" 
+              showStatus.type === "success"
+                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                : showStatus.type === "loading"
+                ? "bg-sky-50 text-sky-800 border-sky-200"
                 : "bg-rose-50 text-rose-800 border-rose-200"
             }`}>
-              <AlertCircle className={`w-4 h-4 mt-0.5 shrink-0 ${showStatus.type === "success" ? "text-emerald-700" : "text-rose-700"}`} />
+              <AlertCircle className={`w-4 h-4 mt-0.5 shrink-0 ${showStatus.type === "success" ? "text-emerald-700" : showStatus.type === "loading" ? "text-sky-600" : "text-rose-700"}`} />
               <div className="font-medium">{showStatus.msg}</div>
             </div>
           )}
@@ -245,7 +362,7 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => handleProviderChange(p.id as ApiConfig["provider"])}
+                  onClick={() => handleProviderChange(p.id as ProviderId)}
                   className={`text-left p-3.5 rounded-2xl border transition-all text-xs cursor-pointer flex flex-col justify-between h-24 ${
                     provider === p.id 
                       ? "bg-white border-[#5a5a40] shadow-sm ring-1 ring-[#5a5a40]" 
@@ -294,13 +411,23 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
                       ⭐ 前往获取 Gemini Key →
                     </a>
                   )}
+                  {provider === "alibaba" && (
+                    <a 
+                      href="https://dashscope.console.aliyun.com/apiKey" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-[10px] text-[#5a5a40] hover:underline font-medium"
+                    >
+                      ⭐ 前往获取通义千问 Key →
+                    </a>
+                  )}
                 </div>
                 <div className="relative">
                   <input
                     type={showKey ? "text" : "password"}
                     placeholder={`请输入您的 ${provider.toUpperCase()} 密钥 (例如：sk-...)`}
                     value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
+                    onChange={(e) => updateCurrentConfig({ apiKey: e.target.value })}
                     className="w-full bg-[#f5f5f0]/50 border border-[#dcdcc8] focus:border-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40] rounded-xl pl-4 pr-10 py-2.5 text-xs text-[#4a4a40] tracking-wider"
                   />
                   <button
@@ -326,7 +453,7 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
                     type="text"
                     placeholder="例如：https://api.deepseek.com/v1"
                     value={baseUrl}
-                    onChange={(e) => setBaseUrl(e.target.value)}
+                    onChange={(e) => updateCurrentConfig({ baseUrl: e.target.value })}
                     className="w-full bg-[#f5f5f0]/50 border border-[#dcdcc8] focus:border-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40] rounded-xl px-4 py-2.5 text-xs text-[#4a4a40]"
                   />
                   <p className="text-[9px] text-[#8a8a70] font-sans mt-0.5">
@@ -344,11 +471,11 @@ export default function ApiSettingsModal({ isOpen, onClose, config, onSave }: Ap
                     type="text"
                     placeholder="例如：deepseek-chat / gpt-4o-mini"
                     value={model}
-                    onChange={(e) => setModel(e.target.value)}
+                    onChange={(e) => updateCurrentConfig({ model: e.target.value })}
                     className="w-full bg-[#f5f5f0]/50 border border-[#dcdcc8] focus:border-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40] rounded-xl px-4 py-2.5 text-xs text-[#4a4a40] font-mono"
                   />
                   <p className="text-[9px] text-[#8a8a70] font-sans mt-0.5">
-                    支持按自己喜好更改（如: `gpt-4.5`、`gpt-5-preview`、`gpt-5.5-preview` 或 `deepseek-reasoner` 推理）。
+                    支持按自己喜好更改（如: `gpt-4.5`、`deepseek-v4-pro` 或 `deepseek-v4-flash`）。
                   </p>
                 </div>
 
